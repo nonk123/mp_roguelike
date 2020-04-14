@@ -15,7 +15,7 @@ class RoguelikeConsumer(WebsocketConsumer):
 
         self.accept();
 
-        self.respond("update", world.tiles)
+        self.respond("update", world.get_sprites())
 
     def disconnect(self, close_code):
         pass

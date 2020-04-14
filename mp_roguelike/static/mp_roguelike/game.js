@@ -10,6 +10,7 @@ function render(tiles) {
         for (tile of row) {
             const tileElement = document.createElement("td");
             tileElement.class = "tile";
+            tileElement.style = `color: ${tile.fg}; background: ${tile.bg};`;
             tileElement.appendChild(document.createTextNode(tile.character));
             rowElement.appendChild(tileElement);
         }
