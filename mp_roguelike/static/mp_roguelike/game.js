@@ -1,4 +1,5 @@
 const gameElement = document.getElementById("game");
+const statusElement = document.getElementById("status");
 
 function render(tiles) {
     gameElement.textContent = "";
@@ -19,7 +20,7 @@ function render(tiles) {
 
 const handlers = {
     "update": data => render(data),
-    "message": data => console.log(`${data.sender}: ${data.text}`)
+    "message": data => statusElement.textContent = `${data.sender}: ${data.text}`
 };
 
 const socket = new WebSocket(`ws://${window.location.host}/server/`);
