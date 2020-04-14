@@ -10,6 +10,7 @@ ALLOWED_HOSTS = ALLOWED_HOSTS.split(",") if ALLOWED_HOSTS else []
 
 INSTALLED_APPS = [
     "mp_roguelike",
+    "channels",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -62,6 +63,8 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+ASGI_APPLICATION = 'mp_roguelike.routing.application'
 
 LANGUAGE_CODE = 'en-us'
 

@@ -1,19 +1,5 @@
 const gameElement = document.getElementById("game");
 
-class Tile {
-    constructor(character) {
-        this.character = character;
-    }
-
-    get character() {
-        return this._character;
-    }
-
-    set character(character) {
-        this._character = character;
-    }
-}
-
 function render(tiles) {
     gameElement.textContent = "";
 
@@ -31,21 +17,8 @@ function render(tiles) {
     }
 }
 
-const tiles = [];
+const socket = new WebSocket(`ws://${window.location.host}/server/`);
 
-const w = 50;
-const h = 50;
-
-for (let y = 0; y < h; y++) {
-    tiles[y] = [];
-
-    for (let x = 0; x < w; x++) {
-        if (x == 0 || y == 0 || x == w - 1 || y == h - 1) {
-            tiles[y][x] = new Tile("#");
-        } else {
-            tiles[y][x] = new Tile(".");
-        }
-    }
+socket.onmessage = function(e) {
+    render(JSON.parse(e.data));
 }
-
-render(tiles);
