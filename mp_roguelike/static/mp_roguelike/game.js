@@ -17,8 +17,30 @@ function render(tiles) {
     }
 }
 
+const handlers = {
+    "update": data => render(data),
+    "message": data => console.log(`${data.sender}: ${data.text}`)
+};
+
 const socket = new WebSocket(`ws://${window.location.host}/server/`);
 
+function respond(event, data) {
+    socket.send(JSON.stringify({
+        "e": event,
+        "d": data
+    }));
+}
+
+socket.onopen = function(e) {
+    respond("auth", "garbage");
+}
+
 socket.onmessage = function(e) {
-    render(JSON.parse(e.data));
+    const response = JSON.parse(e.data);
+
+    const event = response.e;
+
+    if (event in handlers) {
+        handlers[event](response.d);
+    }
 }
