@@ -1,9 +1,24 @@
 <!DOCTYPE html>
 <html>
+  {% load static %}
   <head>
     <title>Multiplayer Roguelike</title>
+    <style>
+      #game {
+          border-collapse: collapse;
+          margin: 0 auto;
+      }
+
+      * {
+          font-size: 12px;
+          font-family: monospace;
+          background: black;
+          color: gray;
+      }
+    </style>
   </head>
   <body>
-    <h1>Hello, World!</h1>
+    <table id="game"></table>
+    <script src="{% static "mp_roguelike/game.js" %}"></script>
   </body>
 </html>
