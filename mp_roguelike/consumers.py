@@ -1,30 +1,22 @@
-import json
+import jsonpickle
 
 from channels.generic.websocket import WebsocketConsumer
+
+from .world import World
+
+world = World(20, 20)
+world.generate()
 
 class RoguelikeConsumer(WebsocketConsumer):
     def connect(self):
         self.accept();
-        self.send(text_data=json.dumps(list(self.generate_tiles(50, 50))))
-
-    def generate_tiles(self, w, h):
-        for y in range(h):
-            row = []
-
-            for x in range(w):
-                if x == 0 or y == 0 or x == w - 1 or y == h - 1:
-                    c = "#"
-                else:
-                    c = "."
-
-                row.append({
-                    "character": c
-                })
-
-            yield row
+        self.send(text_data=self.serialize(world.tiles))
 
     def disconnect(self, close_code):
         pass
 
     def receive(self, text_data):
         pass
+
+    def serialize(self, obj):
+        return jsonpickle.encode(obj, unpicklable=False)
