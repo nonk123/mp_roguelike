@@ -10,11 +10,19 @@ function draw() {
         const rowElement = document.createElement("tr");
 
         for (sprite of row) {
-            const spriteElement = document.createElement("td");
-            spriteElement.class = "tile";
-            spriteElement.style = `color: ${sprite.fg}; background: ${sprite.bg};`;
-            spriteElement.appendChild(document.createTextNode(sprite.character));
-            rowElement.appendChild(spriteElement);
+            const style = `\
+color: ${sprite.fg};
+background: ${sprite.bg};
+font-size: 15px;`;
+
+            const dataElement = document.createElement("td");
+
+            const spriteElement = document.createElement("span");
+            spriteElement.style = style;
+            spriteElement.textContent = sprite.character;
+
+            dataElement.appendChild(spriteElement);
+            rowElement.appendChild(dataElement);
         }
 
         gameElement.appendChild(rowElement);
@@ -49,6 +57,7 @@ function displayMessage(data) {
     messageElement.innerHTML = `${data.sender}: ${data.text}<br>`;
 
     statusElement.appendChild(messageElement);
+    statusElement.scrollTop = statusElement.scrollHeight;
 }
 
 const handlers = {

@@ -4,27 +4,51 @@
   <head>
     <title>Multiplayer Roguelike</title>
     <style>
-      #game {
+      body, tr, td {
+          margin: 0;
+          padding: 0;
+      }
+
+      #game, .layout {
           border-collapse: collapse;
       }
 
       .ui {
-          margin-top: 13px;
-          margin-left: auto;
-          margin-right: auto;
+          padding: 7px;
+      }
+
+      .vsplit {
+          width: 50vw;
+          height: 100vh;
+          top: 0px;
+          bottom: 0px;
+      }
+
+      #status {
+          vertical-align: top;
+          overflow-y: scroll;
       }
 
       * {
-          font-size: 13px;
+          font-size: 12px;
           font-family: monospace;
+          box-sizing: border-box;
           background: black;
           color: gray;
       }
     </style>
   </head>
   <body>
-    <table id="game" class="ui"></table>
-    <div id="status" class="ui"></div>
+    <table class="layout">
+      <tr>
+        <td class="ui vsplit" style="border-right: 2px solid gray;">
+          <table id="game" class="ui" style="margin: 0 auto;"></table>
+        </td>
+        <td style="vertical-align: top;">
+          <div id="status" class="ui vsplit"></div>
+        </td>
+      </tr>
+    </table>
     <!-- Allows passing `name' variable from the query into the script. -->
     <input id="name" type="hidden" value="{{ name }}">
     <script src="{% static "mp_roguelike/game.js" %}"></script>
