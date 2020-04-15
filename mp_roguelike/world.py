@@ -50,6 +50,12 @@ class Entity(Tile):
     def on_remove(self):
         self.world = None
 
+    def move(self, dx, dy):
+        new_pos = [self.x + dx, self.y + dy]
+
+        if not self.world.is_occupied(*new_pos):
+            self.x, self.y = new_pos
+
 class World:
     def __init__(self, width, height):
         self.width = width
@@ -84,19 +90,36 @@ class World:
         entity.on_remove()
         self.entities.remove(entity)
 
+    def get_sprite_at(self, x, y):
+        sprite = self.get_tile_at(x, y).sprite
+
+        for entity in self.get_entities_at(x, y):
+            sprite = entity.sprite
+
+        return sprite
+
     def get_sprites(self):
         sprites = []
 
-        for y, row in enumerate(self.tiles):
+        for y in range(self.height):
             sprites.append([])
 
-            for x, tile in enumerate(row):
-                sprites[y].append(tile.sprite)
-
-                for entity in self.get_entities_at(x, y):
-                    sprites[y][x] = entity.sprite
+            for x in range(self.width):
+                sprites[y].append(self.get_sprite_at(x, y))
 
         return sprites
+
+    def get_delta(self, sprites):
+        delta = {}
+
+        for y in range(self.height):
+            for x in range(self.width):
+                new_sprite = self.get_sprite_at(x, y)
+
+                if sprites[y][x] != new_sprite:
+                    delta[f"{x}:{y}"] = new_sprite
+
+        return delta
 
     def generate(self):
         self.tiles = []

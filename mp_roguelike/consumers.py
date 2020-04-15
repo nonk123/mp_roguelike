@@ -15,16 +15,14 @@ class Player:
         self.entity = Entity()
         world.add_entity(self.entity)
 
-    def update(self):
-        self.consumer.update()
-
     def on_remove(self):
         self.entity.remove()
 
 class RoguelikeConsumer(WebsocketConsumer):
     def connect(self):
         self.handlers = {
-            "auth": self.on_auth
+            "auth": self.on_auth,
+            "move": self.on_move
         }
 
         self.accept();
@@ -54,8 +52,25 @@ class RoguelikeConsumer(WebsocketConsumer):
             "text": text
         })
 
-    def update(self):
-        self.respond("update", world.get_sprites())
+    def apply_delta(self, delta):
+        for pos, sprite in delta.items():
+            x = int(pos.split(":")[0])
+            y = int(pos.split(":")[1])
+
+            self.sprites[y][x] = sprite
+
+    def update(self, player):
+        self.sprites = world.get_sprites()
+        player.consumer.respond("delta", player.consumer.sprites)
+
+    def delta(self, player):
+        delta = world.get_delta(player.consumer.sprites)
+        player.consumer.respond("update", delta)
+        player.consumer.apply_delta(delta)
+
+    def all(self, fun, *args, **kwargs):
+        for player in players:
+            fun(player, *args, **kwargs)
 
     def on_auth(self, data):
         if not data:
@@ -66,5 +81,10 @@ class RoguelikeConsumer(WebsocketConsumer):
         self.player = Player(self)
         players.append(self.player)
 
-        for player in players:
-            player.update()
+        self.update(self.player)
+        self.all(self.delta)
+
+    def on_move(self, data):
+        if abs(data["dx"]) <= 1 and abs(data["dy"]) <= 1:
+            self.player.entity.move(data["dx"], data["dy"])
+            self.all(self.delta)

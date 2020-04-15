@@ -1,26 +1,52 @@
 const gameElement = document.getElementById("game");
 const statusElement = document.getElementById("status");
 
-function render(tiles) {
+let display = [];
+
+function draw() {
     gameElement.textContent = "";
 
-    for (row of tiles) {
+    for (row of display) {
         const rowElement = document.createElement("tr");
 
-        for (tile of row) {
-            const tileElement = document.createElement("td");
-            tileElement.class = "tile";
-            tileElement.style = `color: ${tile.fg}; background: ${tile.bg};`;
-            tileElement.appendChild(document.createTextNode(tile.character));
-            rowElement.appendChild(tileElement);
+        for (sprite of row) {
+            const spriteElement = document.createElement("td");
+            spriteElement.class = "tile";
+            spriteElement.style = `color: ${sprite.fg}; background: ${sprite.bg};`;
+            spriteElement.appendChild(document.createTextNode(sprite.character));
+            rowElement.appendChild(spriteElement);
         }
 
         gameElement.appendChild(rowElement);
     }
 }
 
+function updateDisplay(sprites) {
+    if (Array.isArray(sprites)) {
+        for (y in sprites) {
+            const row = sprites[y];
+
+            display[y] = [];
+
+            for (x in row) {
+                display[y][x] = row[x];
+            }
+        }
+    } else {
+        for (pos in sprites) {
+            const x = pos.split(":")[0];
+            const y = pos.split(":")[1];
+
+            display[y][x] = sprites[pos];
+        }
+    }
+
+    draw();
+}
+
 const handlers = {
-    "update": data => render(data),
+    "update": updateDisplay,
+    "delta": updateDisplay,
     "message": data => statusElement.textContent = `${data.sender}: ${data.text}`
 };
 
@@ -46,3 +72,25 @@ socket.onmessage = function(e) {
         handlers[event](response.d);
     }
 }
+
+document.addEventListener("keydown", function(event) {
+    const key = event.key;
+
+    const movement = {
+        "1": [-1,  1],
+        "2": [ 0,  1],
+        "3": [ 1,  1],
+        "4": [-1,  0],
+        "6": [ 1,  0],
+        "7": [-1, -1],
+        "8": [ 0, -1],
+        "9": [ 1, -1]
+    }
+
+    if (key in movement) {
+        respond("move", {
+            "dx": movement[key][0],
+            "dy": movement[key][1]
+        });
+    }
+});
