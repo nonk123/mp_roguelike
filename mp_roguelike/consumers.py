@@ -15,7 +15,13 @@ class Player:
         self.entity = Entity()
         world.add_entity(self.entity)
 
+        self.move_listener = self.entity.on("move", self.__delta_all)
+
+    def __delta_all(self, entity):
+        self.consumer.all(self.consumer.delta)
+
     def on_remove(self):
+        self.move_listener.remove()
         self.entity.remove()
 
 class RoguelikeConsumer(WebsocketConsumer):
@@ -87,4 +93,3 @@ class RoguelikeConsumer(WebsocketConsumer):
     def on_move(self, data):
         if abs(data["dx"]) <= 1 and abs(data["dy"]) <= 1:
             self.player.entity.move(data["dx"], data["dy"])
-            self.all(self.delta)

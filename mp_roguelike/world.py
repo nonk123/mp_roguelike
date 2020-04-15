@@ -1,5 +1,7 @@
 import random
 
+from .event import sender, event
+
 class Sprite:
     def __init__(self, character="&nbsp;", fg="gray", bg="black"):
         self.character = character
@@ -23,6 +25,7 @@ class Wall(Tile):
 
         self.impassable = True
 
+@sender
 class Entity(Tile):
     colors = ["red", "green", "blue", "yellow", "orange", "magenta", "cyan"]
 
@@ -50,6 +53,7 @@ class Entity(Tile):
     def on_remove(self):
         self.world = None
 
+    @event
     def move(self, dx, dy):
         new_pos = [self.x + dx, self.y + dy]
 
