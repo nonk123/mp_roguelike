@@ -2,8 +2,6 @@ import jsonpickle
 
 from channels.generic.websocket import WebsocketConsumer
 
-import functools
-
 from .world import World, Entity
 
 world = World(20, 20)
