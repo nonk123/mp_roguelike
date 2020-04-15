@@ -44,10 +44,17 @@ function updateDisplay(sprites) {
     draw();
 }
 
+function displayMessage(data) {
+    const messageElement = document.createElement("span");
+    messageElement.innerHTML = `${data.sender}: ${data.text}<br>`;
+
+    statusElement.appendChild(messageElement);
+}
+
 const handlers = {
     "update": updateDisplay,
     "delta": updateDisplay,
-    "message": data => statusElement.textContent = `${data.sender}: ${data.text}`
+    "message": displayMessage
 };
 
 const socket = new WebSocket(`ws://${window.location.host}/server/`);
