@@ -81,6 +81,10 @@ socket.onopen = function(e) {
     });
 }
 
+socket.onclose = function(e) {
+    displayMessage({"sender": e.code, text: "disconnected"});
+}
+
 socket.onmessage = function(e) {
     const response = JSON.parse(e.data);
 
