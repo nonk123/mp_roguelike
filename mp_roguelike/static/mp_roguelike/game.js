@@ -67,7 +67,9 @@ function respond(event, data) {
 }
 
 socket.onopen = function(e) {
-    respond("auth", "garbage");
+    respond("auth", {
+        "name": "test"
+    });
 }
 
 socket.onmessage = function(e) {

@@ -10,8 +10,9 @@ world.generate()
 players = []
 
 class Player:
-    def __init__(self, consumer):
+    def __init__(self, consumer, name):
         self.consumer = consumer
+        self.name = name
         self.respawn()
 
     def __delta_all(self, *event_args):
@@ -23,6 +24,9 @@ class Player:
 
         self.entity.on("move", self.__delta_all)
         self.entity.on("die", self.respawn)
+
+    def get_fancy_name(self):
+        return f'<span style="color: {self.entity.sprite.fg};">{self.name}</span>'
 
     def on_remove(self):
         self.entity.remove()
@@ -38,8 +42,13 @@ class RoguelikeConsumer(WebsocketConsumer):
 
     def disconnect(self, close_code):
         if self.player:
+            goodbye_msg = f"{self.player.get_fancy_name()} disconnected"
+            self.send_message_to_all("Server", goodbye_msg)
+
             self.player.on_remove()
             players.remove(self.player)
+
+            self.all(self.delta)
 
     def receive(self, text_data):
         decoded = jsonpickle.decode(text_data)
@@ -60,6 +69,9 @@ class RoguelikeConsumer(WebsocketConsumer):
             "sender": sender,
             "text": text
         })
+
+    def send_message_to_all(self, sender, text):
+        self.all(lambda player: player.consumer.send_message(sender, text))
 
     def apply_delta(self, delta):
         for pos, sprite in delta.items():
@@ -82,13 +94,19 @@ class RoguelikeConsumer(WebsocketConsumer):
             fun(player, *args, **kwargs)
 
     def on_auth(self, data):
-        if not data:
+        if not data or "name" not in data:
             self.close()
             return
 
-        self.send_message("Server", "Successfully authorized")
-        self.player = Player(self)
+        self.player = Player(self, data["name"])
         players.append(self.player)
+
+        color = self.player.entity.sprite.fg
+        welcome_msg = f"{self.player.get_fancy_name()} joined the game"
+        players_list = ", ".join(player.get_fancy_name() for player in players)
+
+        self.send_message_to_all("Server", welcome_msg)
+        self.send_message("Online", players_list)
 
         self.update(self.player)
         self.all(self.delta)
