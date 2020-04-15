@@ -31,7 +31,12 @@ def sender(cls):
             self._handlers[event].append(handler)
             return EventListener(self, event, handler)
 
+    def _clear_all_handlers(self):
+        for key in self._handlers:
+            self._handlers[key] = []
+
     cls.__init__ = __init__
+    cls._clear_all_handlers = _clear_all_handlers
     cls.on = on
 
     return cls
@@ -39,9 +44,12 @@ def sender(cls):
 def event(fun):
     @functools.wraps(fun)
     def wrapper(self, *args, **kwargs):
+        # Save `self._handlers' in case it gets cleared when calling `fun'.
+        handlers = [handler for handler in self._handlers[fun.__name__]]
+
         ret = fun(self, *args, **kwargs)
 
-        for handler in self._handlers[fun.__name__]:
+        for handler in handlers:
             handler(self)
 
         return ret
