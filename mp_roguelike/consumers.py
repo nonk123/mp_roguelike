@@ -37,7 +37,8 @@ class RoguelikeConsumer(WebsocketConsumer):
     def connect(self):
         self.handlers = {
             "auth": self.on_auth,
-            "move": self.on_move
+            "move": self.on_move,
+            "chat": self.on_chat
         }
 
         self.accept();
@@ -117,3 +118,7 @@ class RoguelikeConsumer(WebsocketConsumer):
     def on_move(self, data):
         if abs(data["dx"]) <= 1 and abs(data["dy"]) <= 1:
             self.player.entity.move(data["dx"], data["dy"])
+
+    def on_chat(self, data):
+        if data["message"]:
+            self.send_message_to_all(self.player.get_fancy_name(), data["message"])

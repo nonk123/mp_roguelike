@@ -91,24 +91,59 @@ socket.onmessage = function(e) {
     }
 }
 
-document.addEventListener("keydown", function(event) {
+function move(dx, dy) {
+    respond("move", {
+        "dx": dx,
+        "dy": dy
+    });
+}
+
+const inputField = document.getElementById("chatInput");
+
+inputField.addEventListener("keydown", event => {
+    if (event.key == "Enter") {
+        respond("chat", {
+            "message": inputField.value
+        });
+
+        inputField.value = "";
+    }
+
+    if (event.key == "Escape") {
+        inputField.blur();
+    }
+})
+
+const keys = {
+    "t": () => inputField.focus()
+}
+
+const gameKeys = {
+    "1": () => move(-1, 1),
+    "2": () => move(0, 1),
+    "3": () => move(1, 1),
+    "4": () => move(-1, 0),
+    "6": () => move(1, 0),
+    "7": () => move(-1, -1),
+    "8": () => move(0, -1),
+    "9": () => move(1, -1),
+}
+
+function onKeyPress(key, keys) {
+    if (key in keys) {
+        keys[key]();
+        return true;
+    }
+
+    return false;
+}
+
+document.addEventListener("keyup", event => {
     const key = event.key;
 
-    const movement = {
-        "1": [-1,  1],
-        "2": [ 0,  1],
-        "3": [ 1,  1],
-        "4": [-1,  0],
-        "6": [ 1,  0],
-        "7": [-1, -1],
-        "8": [ 0, -1],
-        "9": [ 1, -1]
-    }
-
-    if (key in movement) {
-        respond("move", {
-            "dx": movement[key][0],
-            "dy": movement[key][1]
-        });
+    if (chatInput.hasFocus || !onKeyPress(key, gameKeys)) {
+        onKeyPress(key, keys);
     }
 });
+
+gameElement.focus();
