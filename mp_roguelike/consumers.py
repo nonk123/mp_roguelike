@@ -2,6 +2,8 @@ import jsonpickle
 
 from channels.generic.websocket import WebsocketConsumer
 
+import random
+
 from .world import World, Entity
 
 world = World(20, 20)
@@ -41,7 +43,7 @@ class RoguelikeConsumer(WebsocketConsumer):
         self.accept();
 
     def disconnect(self, close_code):
-        if self.player:
+        if hasattr(self, "player") and self.player:
             goodbye_msg = f"{self.player.get_fancy_name()} disconnected"
             self.send_message_to_all("Server", goodbye_msg)
 
@@ -98,7 +100,8 @@ class RoguelikeConsumer(WebsocketConsumer):
             self.close()
             return
 
-        self.player = Player(self, data["name"])
+        name = data["name"] or f"Guest{random.randint(1, 10000):04}"
+        self.player = Player(self, name)
         players.append(self.player)
 
         color = self.player.entity.sprite.fg

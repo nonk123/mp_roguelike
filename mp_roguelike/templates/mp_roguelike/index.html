@@ -25,6 +25,8 @@
   <body>
     <table id="game" class="ui"></table>
     <div id="status" class="ui"></div>
+    <!-- Allows passing `name' variable from the query into the script. -->
+    <input id="name" type="hidden" value="{{ name }}">
     <script src="{% static "mp_roguelike/game.js" %}"></script>
   </body>
 </html>

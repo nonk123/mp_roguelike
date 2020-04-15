@@ -59,7 +59,7 @@ const handlers = {
 
 const socket = new WebSocket(`ws://${window.location.host}/server/`);
 
-function respond(event, data) {
+function respond(event, data="") {
     socket.send(JSON.stringify({
         "e": event,
         "d": data
@@ -68,7 +68,7 @@ function respond(event, data) {
 
 socket.onopen = function(e) {
     respond("auth", {
-        "name": "test"
+        "name": document.getElementById("name").value
     });
 }
 
