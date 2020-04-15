@@ -116,27 +116,40 @@ inputField.addEventListener("keydown", event => {
     if (event.key == "Escape") {
         inputField.blur();
     }
-})
+});
 
 const keys = {
     "t": () => inputField.focus()
-}
+};
 
 const gameKeys = {
-    "1": () => move(-1, 1),
-    "2": () => move(0, 1),
-    "3": () => move(1, 1),
-    "4": () => move(-1, 0),
-    "6": () => move(1, 0),
-    "7": () => move(-1, -1),
-    "8": () => move(0, -1),
-    "9": () => move(1, -1),
+    "1,b": () => move(-1, 1),
+    "2,j": () => move(0, 1),
+    "3,n": () => move(1, 1),
+    "4,h": () => move(-1, 0),
+    "6,l": () => move(1, 0),
+    "7,y": () => move(-1, -1),
+    "8,k": () => move(0, -1),
+    "9,u": () => move(1, -1)
+};
+
+function keyIn(key, bindings) {
+    for (binding of bindings.split(",")) {
+        if (key === binding) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 function onKeyPress(key, keys) {
-    if (key in keys) {
-        keys[key]();
-        return true;
+    for (const bindings in keys) {
+        if (keyIn(key, bindings)) {
+            console.log("hmm?");
+            keys[bindings]();
+            return true;
+        }
     }
 
     return false;
