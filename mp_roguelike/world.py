@@ -35,6 +35,8 @@ class Entity(Tile):
         self.x = -1
         self.y = -1
 
+        self.hp = 10
+
     def remove(self):
         self.world.remove_entity(self)
 
@@ -42,6 +44,17 @@ class Entity(Tile):
         while self.world.is_occupied(self.x, self.y):
             self.x = random.randint(0, self.world.width)
             self.y = random.randint(0, self.world.height)
+
+    @event
+    def damage(self, dmg):
+        self.hp -= dmg
+
+        if self.hp <= 0 and self.hp + dmg > 0:
+            self.die()
+
+    @event
+    def die(self):
+        self.remove()
 
     def is_at(self, x, y):
         return self.x == x and self.y == y
@@ -51,14 +64,26 @@ class Entity(Tile):
         self.random_position()
 
     def on_remove(self):
+        self._clear_all_handlers()
         self.world = None
+
+    @event
+    def attack(self, dx, dy):
+        enemies = self.world.get_entities_at(self.x + dx, self.y + dy)
+
+        if enemies:
+            enemies[0].damage(2)
+            return True
+
+        return False
 
     @event
     def move(self, dx, dy):
         new_pos = [self.x + dx, self.y + dy]
 
         if not self.world.is_occupied(*new_pos):
-            self.x, self.y = new_pos
+            if not self.attack(dx, dy):
+                self.x, self.y = new_pos
 
 class World:
     def __init__(self, width, height):

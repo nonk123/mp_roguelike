@@ -12,16 +12,19 @@ players = []
 class Player:
     def __init__(self, consumer):
         self.consumer = consumer
+        self.respawn()
+
+    def __delta_all(self, *event_args):
+        self.consumer.all(self.consumer.delta)
+
+    def respawn(self, *event_args):
         self.entity = Entity()
         world.add_entity(self.entity)
 
-        self.move_listener = self.entity.on("move", self.__delta_all)
-
-    def __delta_all(self, entity):
-        self.consumer.all(self.consumer.delta)
+        self.entity.on("move", self.__delta_all)
+        self.entity.on("die", self.respawn)
 
     def on_remove(self):
-        self.move_listener.remove()
         self.entity.remove()
 
 class RoguelikeConsumer(WebsocketConsumer):
