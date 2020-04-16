@@ -37,6 +37,10 @@ class Turn:
         self.entity = entity
 
     def do(self):
+        if self.entity.world:
+            self._impl()
+
+    def _impl(self):
         raise NotImplementedError()
 
 class MoveTurn(Turn):
@@ -46,7 +50,7 @@ class MoveTurn(Turn):
         self.dx = dx
         self.dy = dy
 
-    def do(self):
+    def _impl(self):
         self.entity.move(self.dx, self.dy)
 
 class Entity(Tile):
