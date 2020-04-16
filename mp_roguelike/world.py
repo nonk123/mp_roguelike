@@ -33,25 +33,15 @@ class Wall(Tile):
         self.impassable = True
 
 class Turn:
-    def __init__(self, entity):
+    def __init__(self, entity, method, *args, **kwargs):
         self.entity = entity
+        self.method = method
+        self.args = args
+        self.kwargs = kwargs
 
     def do(self):
         if self.entity.world:
-            self._impl()
-
-    def _impl(self):
-        raise NotImplementedError()
-
-class MoveTurn(Turn):
-    def __init__(self, entity, dx, dy):
-        super().__init__(entity)
-
-        self.dx = dx
-        self.dy = dy
-
-    def _impl(self):
-        self.entity.move(self.dx, self.dy)
+            self.method(*self.args, **self.kwargs)
 
 class Entity(Tile):
     colors = ["red", "green", "blue", "yellow", "orange", "magenta", "cyan"]

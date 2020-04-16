@@ -4,7 +4,7 @@ from channels.generic.websocket import WebsocketConsumer
 
 import random
 
-from .world import World, Entity, MoveTurn
+from .world import World, Entity, Turn
 
 world = World(20, 20)
 world.generate()
@@ -138,12 +138,15 @@ class RoguelikeConsumer(WebsocketConsumer):
         self.update(self.player)
         self.all(self.delta)
 
-    def queue_turn(self, t, *args, **kwargs):
-        world.queue_turn(t(self.player.entity, *args, **kwargs))
+    def queue_turn(self, method_string, *args, **kwargs):
+        e = self.player.entity
+        turn = Turn(e, getattr(e, method_string), *args, **kwargs)
+
+        world.queue_turn(turn)
 
     def on_move_turn(self, data):
         if abs(data["dx"]) <= 1 and abs(data["dy"]) <= 1:
-            self.queue_turn(MoveTurn, data["dx"], data["dy"])
+            self.queue_turn("move", data["dx"], data["dy"])
 
     def on_turn(self, data):
         turn_handlers = {
