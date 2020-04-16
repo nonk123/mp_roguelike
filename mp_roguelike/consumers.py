@@ -4,7 +4,7 @@ from channels.generic.websocket import WebsocketConsumer
 
 import random
 
-from .world import World, Entity
+from .world import World, Entity, MoveTurn
 
 world = World(20, 20)
 world.generate()
@@ -16,9 +16,6 @@ class Player:
         self.consumer = consumer
         self.__name = name
         self.respawn()
-
-    def __delta_all(self, dx, dy):
-        self.consumer.all(self.consumer.delta)
 
     def show_death_message(self):
         msg = f"{self.get_fancy_name()} was killed by {self.entity.attacked_by.get_fancy_name()}"
@@ -37,7 +34,6 @@ class Player:
         world.add_entity(self.entity)
         self.consumer.send_message("Game", f"You have {self.entity.hp} HP.")
 
-        self.entity.moved += self.__delta_all
         self.entity.dead += self.show_death_message
         self.entity.dead += self.respawn
         self.entity.damaged += self.show_taken_damage
@@ -53,11 +49,13 @@ class RoguelikeConsumer(WebsocketConsumer):
     def connect(self):
         self.handlers = {
             "auth": self.on_auth,
-            "move": self.on_move,
+            "turn": self.on_turn,
             "chat": self.on_chat
         }
 
         self.accept();
+
+        world.updated += self.delta_all
 
     def disconnect(self, close_code):
         if hasattr(self, "player") and self.player:
@@ -67,7 +65,7 @@ class RoguelikeConsumer(WebsocketConsumer):
             self.player.on_remove()
             players.remove(self.player)
 
-            self.all(self.delta)
+            self.delta_all()
 
     def receive(self, text_data):
         decoded = jsonpickle.decode(text_data)
@@ -99,11 +97,17 @@ class RoguelikeConsumer(WebsocketConsumer):
 
             self.sprites[y][x] = sprite
 
-    def update(self, player):
+    def update(self, player=None):
+        if not player:
+            player = self.player
+
         self.sprites = world.get_sprites()
         player.consumer.respond("delta", player.consumer.sprites)
 
-    def delta(self, player):
+    def delta(self, player=None):
+        if not player:
+            player = self.player
+
         delta = world.get_delta(player.consumer.sprites)
         player.consumer.respond("update", delta)
         player.consumer.apply_delta(delta)
@@ -111,6 +115,9 @@ class RoguelikeConsumer(WebsocketConsumer):
     def all(self, fun, *args, **kwargs):
         for player in players:
             fun(player, *args, **kwargs)
+
+    def delta_all(self):
+        self.all(self.delta)
 
     def on_auth(self, data):
         if not data or "name" not in data:
@@ -131,9 +138,24 @@ class RoguelikeConsumer(WebsocketConsumer):
         self.update(self.player)
         self.all(self.delta)
 
-    def on_move(self, data):
+    def queue_turn(self, t, *args, **kwargs):
+        world.queue_turn(t(self.player.entity, *args, **kwargs))
+
+    def on_move_turn(self, data):
         if abs(data["dx"]) <= 1 and abs(data["dy"]) <= 1:
-            self.player.entity.move(data["dx"], data["dy"])
+            self.queue_turn(MoveTurn, data["dx"], data["dy"])
+
+    def on_turn(self, data):
+        turn_handlers = {
+            "move": self.on_move_turn
+        }
+
+        turn_type = data["turn_type"]
+
+        if turn_type in turn_handlers:
+            turn_handlers[turn_type](data["data"])
+
+        world.update()
 
     def on_chat(self, data):
         if data["message"]:

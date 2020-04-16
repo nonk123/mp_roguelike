@@ -75,6 +75,13 @@ function respond(event, data="") {
     }));
 }
 
+function turn(type, data) {
+    respond("turn", {
+        "turn_type": type,
+        "data": data
+    });
+}
+
 socket.onopen = function(e) {
     respond("auth", {
         "name": document.getElementById("name").value
@@ -96,7 +103,7 @@ socket.onmessage = function(e) {
 }
 
 function move(dx, dy) {
-    respond("move", {
+    turn("move", {
         "dx": dx,
         "dy": dy
     });
@@ -127,6 +134,7 @@ const gameKeys = {
     "2,j": () => move(0, 1),
     "3,n": () => move(1, 1),
     "4,h": () => move(-1, 0),
+    "5,.": () => move(0, 0),
     "6,l": () => move(1, 0),
     "7,y": () => move(-1, -1),
     "8,k": () => move(0, -1),

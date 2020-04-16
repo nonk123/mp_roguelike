@@ -32,6 +32,23 @@ class Wall(Tile):
 
         self.impassable = True
 
+class Turn:
+    def __init__(self, entity):
+        self.entity = entity
+
+    def do(self):
+        raise NotImplementedError()
+
+class MoveTurn(Turn):
+    def __init__(self, entity, dx, dy):
+        super().__init__(entity)
+
+        self.dx = dx
+        self.dy = dy
+
+    def do(self):
+        self.entity.move(self.dx, self.dy)
+
 class Entity(Tile):
     colors = ["red", "green", "blue", "yellow", "orange", "magenta", "cyan"]
 
@@ -45,6 +62,8 @@ class Entity(Tile):
 
         self.attacked_by = Tile()
         self.attack_roll = Die(1, 6, +2)
+
+        self.turn_done = False
 
         self.damaged = Sender()
         self.dead = Sender()
@@ -91,7 +110,10 @@ class Entity(Tile):
         enemies = self.world.get_entities_at(self.x + dx, self.y + dy)
 
         if enemies:
-            self.attack(enemies[0])
+            enemy = enemies[0]
+
+            if enemy is not self:
+                self.attack(enemy)
 
         return bool(enemies)
 
@@ -110,6 +132,9 @@ class World:
         self.height = height
         self.tiles = []
         self.entities = []
+        self.queued_turns = []
+
+        self.updated = Sender()
 
     def get_tile_at(self, x, y):
         if self.is_in_bounds(x, y):
@@ -168,6 +193,25 @@ class World:
                     delta[f"{x}:{y}"] = new_sprite
 
         return delta
+
+    def queue_turn(self, turn):
+        if not turn.entity.turn_done:
+            self.queued_turns.append(turn)
+        turn.entity.turn_done = True
+
+    def update(self):
+        if False in [entity.turn_done for entity in self.entities]:
+            return
+
+        for turn in self.queued_turns:
+            turn.do()
+
+        for entity in self.entities:
+            entity.turn_done = False
+
+        self.queued_turns = []
+
+        self.updated()
 
     def generate(self):
         self.tiles = []
