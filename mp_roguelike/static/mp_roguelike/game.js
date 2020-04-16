@@ -157,7 +157,7 @@ function onKeyPress(key, keys) {
 document.addEventListener("keyup", event => {
     const key = event.key;
 
-    if (chatInput.hasFocus || !onKeyPress(key, gameKeys)) {
+    if (chatInput == document.activeElement || !onKeyPress(key, gameKeys)) {
         onKeyPress(key, keys);
     }
 });
