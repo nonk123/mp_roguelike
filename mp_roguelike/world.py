@@ -1,6 +1,7 @@
 import random
 
-from .event import sender, event
+from .util import color
+from .event import Sender
 
 class Sprite:
     def __init__(self, character="&nbsp;", fg="gray", bg="black"):
@@ -9,33 +10,46 @@ class Sprite:
         self.bg = bg
 
 class Tile:
-    def __init__(self, sprite=Sprite()):
+    def __init__(self, name="thin air", sprite=Sprite()):
+        self.name = name
         self.sprite = sprite
         self.impassable = False
+
+    def get_fancy_name(self):
+        return color(self.sprite.fg, self.name)
 
 class Floor(Tile):
     characters = (".", ".", ".", ",")
 
     def __init__(self, color="green"):
-        super().__init__(Sprite(random.choice(Floor.characters), color))
+        sprite = Sprite(random.choice(Floor.characters), color)
+
+        super().__init__(f"{color.title()} Floor", sprite)
 
 class Wall(Tile):
     def __init__(self, color="saddlebrown"):
-        super().__init__(Sprite("#", color))
+        super().__init__(f"{color.title()} Wall", Sprite("#", color))
 
         self.impassable = True
 
-@sender
 class Entity(Tile):
     colors = ["red", "green", "blue", "yellow", "orange", "magenta", "cyan"]
 
-    def __init__(self):
-        super().__init__(Sprite("@", random.choice(self.colors)))
+    def __init__(self, name):
+        super().__init__(name, Sprite("@", random.choice(self.colors)))
 
         self.x = -1
         self.y = -1
 
         self.hp = 10
+
+        self.attacked_by = Tile()
+        self.attack_damage = 5
+
+        self.damaged = Sender()
+        self.dead = Sender()
+        self.attacked = Sender()
+        self.moved = Sender()
 
     def remove(self):
         self.world.remove_entity(self)
@@ -45,16 +59,17 @@ class Entity(Tile):
             self.x = random.randint(0, self.world.width)
             self.y = random.randint(0, self.world.height)
 
-    @event
     def damage(self, dmg):
         self.hp -= dmg
+
+        self.damaged(dmg)
 
         if self.hp <= 0 and self.hp + dmg > 0:
             self.die()
 
-    @event
     def die(self):
         self.remove()
+        self.dead()
 
     def is_at(self, x, y):
         return self.x == x and self.y == y
@@ -64,26 +79,29 @@ class Entity(Tile):
         self.random_position()
 
     def on_remove(self):
-        self._clear_all_handlers()
         self.world = None
 
-    @event
-    def attack(self, dx, dy):
+    def attack(self, entity):
+        entity.attacked_by = self
+        self.attacked(entity)
+        entity.damage(self.attack_damage)
+
+    def attack_direction(self, dx, dy):
         enemies = self.world.get_entities_at(self.x + dx, self.y + dy)
 
         if enemies:
-            enemies[0].damage(2)
-            return True
+            self.attack(enemies[0])
 
-        return False
+        return bool(enemies)
 
-    @event
     def move(self, dx, dy):
         new_pos = [self.x + dx, self.y + dy]
 
         if not self.world.is_occupied(*new_pos):
-            if not self.attack(dx, dy):
+            if not self.attack_direction(dx, dy):
                 self.x, self.y = new_pos
+
+        self.moved(dx, dy)
 
 class World:
     def __init__(self, width, height):

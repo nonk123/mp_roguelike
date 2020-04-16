@@ -14,21 +14,36 @@ players = []
 class Player:
     def __init__(self, consumer, name):
         self.consumer = consumer
-        self.name = name
+        self.__name = name
         self.respawn()
 
-    def __delta_all(self, *event_args):
+    def __delta_all(self, dx, dy):
         self.consumer.all(self.consumer.delta)
 
-    def respawn(self, *event_args):
-        self.entity = Entity()
+    def show_death_message(self):
+        msg = f"was killed by {self.entity.attacked_by.get_fancy_name()}"
+        self.consumer.send_message_to_all(self.get_fancy_name(), msg)
+
+    def show_dealt_damage(self, enemy):
+        msg = f"hit {enemy.get_fancy_name()} for {self.entity.attack_damage} damage!"
+        self.consumer.send_message("You", msg)
+
+    def show_taken_damage(self, dmg):
+        msg = f"hit you for {dmg} damage!"
+        self.consumer.send_message(self.entity.attacked_by.get_fancy_name(), msg)
+
+    def respawn(self):
+        self.entity = Entity(self.__name)
         world.add_entity(self.entity)
 
-        self.entity.on("move", self.__delta_all)
-        self.entity.on("die", self.respawn)
+        self.entity.moved += self.__delta_all
+        self.entity.dead += self.show_death_message
+        self.entity.dead += self.respawn
+        self.entity.damaged += self.show_taken_damage
+        self.entity.attacked += self.show_dealt_damage
 
     def get_fancy_name(self):
-        return f'<span style="color: {self.entity.sprite.fg};">{self.name}</span>'
+        return self.entity.get_fancy_name()
 
     def on_remove(self):
         self.entity.remove()
