@@ -146,7 +146,6 @@ function keyIn(key, bindings) {
 function onKeyPress(key, keys) {
     for (const bindings in keys) {
         if (keyIn(key, bindings)) {
-            console.log("hmm?");
             keys[bindings]();
             return true;
         }
