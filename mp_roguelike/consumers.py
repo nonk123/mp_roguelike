@@ -24,8 +24,8 @@ class Player:
         msg = f"was killed by {self.entity.attacked_by.get_fancy_name()}"
         self.consumer.send_message_to_all(self.get_fancy_name(), msg)
 
-    def show_dealt_damage(self, enemy):
-        msg = f"hit {enemy.get_fancy_name()} for {self.entity.attack_damage} damage!"
+    def show_dealt_damage(self, enemy, dmg):
+        msg = f"hit {enemy.get_fancy_name()} for {dmg} damage!"
         self.consumer.send_message("You", msg)
 
     def show_taken_damage(self, dmg):
@@ -35,6 +35,7 @@ class Player:
     def respawn(self):
         self.entity = Entity(self.__name)
         world.add_entity(self.entity)
+        self.consumer.send_message("You", f"have {self.entity.hp} HP.")
 
         self.entity.moved += self.__delta_all
         self.entity.dead += self.show_death_message

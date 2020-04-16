@@ -1,6 +1,6 @@
 import random
 
-from .util import color
+from .util import color, Die
 from .event import Sender
 
 class Sprite:
@@ -41,10 +41,10 @@ class Entity(Tile):
         self.x = -1
         self.y = -1
 
-        self.hp = 10
+        self.hp = Die(5, 6, +20).roll()
 
         self.attacked_by = Tile()
-        self.attack_damage = 5
+        self.attack_roll = Die(1, 6, +2)
 
         self.damaged = Sender()
         self.dead = Sender()
@@ -83,8 +83,9 @@ class Entity(Tile):
 
     def attack(self, entity):
         entity.attacked_by = self
-        self.attacked(entity)
-        entity.damage(self.attack_damage)
+        dmg = self.attack_roll()
+        self.attacked(entity, dmg)
+        entity.damage(dmg)
 
     def attack_direction(self, dx, dy):
         enemies = self.world.get_entities_at(self.x + dx, self.y + dy)
