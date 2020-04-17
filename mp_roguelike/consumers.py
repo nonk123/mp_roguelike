@@ -29,6 +29,12 @@ class Player:
         msg = f"{self.entity.attacked_by.get_fancy_name()} hit you for {dmg} damage!"
         self.consumer.send_message("Game", msg)
 
+    def show_dodged_message(self):
+        self.consumer.send_message("Game", "You have dodged!")
+
+    def show_target_dodged_message(self, entity):
+        self.consumer.send_message("Game", f"{entity.get_fancy_name()} has dodged!")
+
     def respawn(self):
         self.entity = Entity(self.__name)
         world.add_entity(self.entity)
@@ -38,6 +44,8 @@ class Player:
         self.entity.dead += self.respawn
         self.entity.damaged += self.show_taken_damage
         self.entity.attacked += self.show_dealt_damage
+        self.entity.dodged += self.show_dodged_message
+        self.entity.target_dodged += self.show_target_dodged_message
 
     def get_fancy_name(self):
         return self.entity.get_fancy_name()
@@ -138,15 +146,8 @@ class RoguelikeConsumer(WebsocketConsumer):
         self.update(self.player)
         self.all(self.delta)
 
-    def queue_turn(self, method_string, *args, **kwargs):
-        e = self.player.entity
-        turn = Turn(e, getattr(e, method_string), *args, **kwargs)
-
-        world.queue_turn(turn)
-
     def on_move_turn(self, data):
-        if abs(data["dx"]) <= 1 and abs(data["dy"]) <= 1:
-            self.queue_turn("move", data["dx"], data["dy"])
+        self.player.entity.queue_move(data["dx"], data["dy"])
 
     def on_turn(self, data):
         turn_handlers = {

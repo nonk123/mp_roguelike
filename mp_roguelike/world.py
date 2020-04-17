@@ -21,30 +21,31 @@ class Tile:
 class Floor(Tile):
     characters = (".", ".", ".", ",")
 
-    def __init__(self, color="green"):
+    def __init__(self, color="gray"):
         sprite = Sprite(random.choice(Floor.characters), color)
 
-        super().__init__(f"{color.title()} Floor", sprite)
+        super().__init__(f"{color.title()} floor", sprite)
 
 class Wall(Tile):
-    def __init__(self, color="saddlebrown"):
-        super().__init__(f"{color.title()} Wall", Sprite("#", color))
+    def __init__(self, color="gray"):
+        super().__init__(f"{color.title()} wall", Sprite("#", color))
 
         self.impassable = True
 
 class Turn:
-    def __init__(self, entity, method, *args, **kwargs):
+    def __init__(self, entity, action, *args, **kwargs):
         self.entity = entity
-        self.method = method
+        self.action = action
         self.args = args
         self.kwargs = kwargs
 
     def do(self):
         if self.entity.world:
-            self.method(*self.args, **self.kwargs)
+            self.action(*self.args, **self.kwargs)
 
 class Entity(Tile):
     colors = ["red", "green", "blue", "yellow", "orange", "magenta", "cyan"]
+    attack_rolls = [Die(1, 6), Die(2, 4, +2), Die(3, 4), Die(2, 6, +1)]
 
     def __init__(self, name):
         super().__init__(name, Sprite("@", random.choice(self.colors)))
@@ -52,10 +53,10 @@ class Entity(Tile):
         self.x = -1
         self.y = -1
 
-        self.hp = Die(5, 6, +20).roll()
+        self.hp = Die(2, 4, +20).roll()
 
         self.attacked_by = Tile()
-        self.attack_roll = Die(1, 6, +2)
+        self.attack_roll = random.choice(self.attack_rolls)
 
         self.turn_done = False
 
@@ -63,6 +64,8 @@ class Entity(Tile):
         self.dead = Sender()
         self.attacked = Sender()
         self.moved = Sender()
+        self.dodged = Sender()
+        self.target_dodged = Sender()
 
     def remove(self):
         self.world.remove_entity(self)
@@ -87,6 +90,9 @@ class Entity(Tile):
     def is_at(self, x, y):
         return self.x == x and self.y == y
 
+    def is_in_movement_range(self, dx, dy):
+        return abs(dx) <= 1 and abs(dy) <= 1
+
     def on_add(self, world):
         self.world = world
         self.random_position()
@@ -100,25 +106,36 @@ class Entity(Tile):
         self.attacked(entity, dmg)
         entity.damage(dmg)
 
-    def attack_direction(self, dx, dy):
-        enemies = self.world.get_entities_at(self.x + dx, self.y + dy)
+    def choose_target(self, targets):
+        return targets[0] if targets else None
 
-        if enemies:
-            enemy = enemies[0]
-
-            if enemy is not self:
-                self.attack(enemy)
-
-        return bool(enemies)
-
-    def move(self, dx, dy):
+    def __move(self, dx, dy, expected_targets):
         new_pos = [self.x + dx, self.y + dy]
+        current_targets = self.world.get_entities_at(*new_pos)
 
-        if not self.world.is_occupied(*new_pos):
-            if not self.attack_direction(dx, dy):
-                self.x, self.y = new_pos
+        target = self.choose_target(expected_targets)
 
-        self.moved(dx, dy)
+        # The target is still in range, strike it.
+        if target in current_targets:
+            return self.attack(target)
+
+        if target:
+            # The target has moved out of range; attacked failed.
+            self.target_dodged(target)
+            target.dodged()
+        elif current_targets:
+            # Another enemy has moved into range, so it receives a beating.
+            self.attack(self.choose_target(current_targets))
+        elif not current_targets:
+            # Space clear, move into it.
+            self.x, self.y = new_pos
+            self.moved(dx, dy)
+
+    def queue_move(self, dx, dy):
+        if self.is_in_movement_range(dx, dy):
+            expected_targets = self.world.get_entities_at(self.x + dx, self.y + dy)
+            turn = Turn(self, self.__move, dx, dy, expected_targets)
+            self.world.queue_turn(turn)
 
 class World:
     def __init__(self, width, height):
