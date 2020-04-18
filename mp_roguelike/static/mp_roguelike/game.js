@@ -1,7 +1,7 @@
 const gameElement = document.getElementById("game");
 const statusElement = document.getElementById("status");
 
-let display = [];
+const display = [];
 
 function draw() {
     gameElement.textContent = "";
@@ -31,14 +31,8 @@ font-size: 15px;`;
 
 function updateDisplay(sprites) {
     if (Array.isArray(sprites)) {
-        for (y in sprites) {
-            const row = sprites[y];
-
-            display[y] = [];
-
-            for (x in row) {
-                display[y][x] = row[x];
-            }
+        for (let y = 0; y < sprites.length; y++) {
+            display[y] = sprites[y].slice();
         }
     } else {
         for (pos in sprites) {

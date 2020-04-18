@@ -4,7 +4,7 @@ from .util import color, Die
 from .event import Sender
 
 class Sprite:
-    def __init__(self, character="&nbsp;", fg="gray", bg="black"):
+    def __init__(self, character="\u00a0", fg="gray", bg="black"):
         self.character = character
         self.fg = fg
         self.bg = bg
@@ -17,6 +17,9 @@ class Tile:
 
     def get_fancy_name(self):
         return color(self.sprite.fg, self.name)
+
+    def get_fancy_you(self):
+        return color(self.sprite.fg, "You")
 
 class Floor(Tile):
     characters = (".", ".", ".", ",")
@@ -115,6 +118,10 @@ class Entity(Tile):
 
         target = self.choose_target(expected_targets)
 
+        # No suicide allowed.
+        if target is self:
+            return
+
         # The target is still in range, strike it.
         if target in current_targets:
             return self.attack(target)
@@ -126,7 +133,7 @@ class Entity(Tile):
         elif current_targets:
             # Another enemy has moved into range, so it receives a beating.
             self.attack(self.choose_target(current_targets))
-        elif not current_targets:
+        elif not current_targets and not self.world.is_occupied(*new_pos):
             # Space clear, move into it.
             self.x, self.y = new_pos
             self.moved(dx, dy)

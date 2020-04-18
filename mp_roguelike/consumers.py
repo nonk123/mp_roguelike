@@ -4,7 +4,7 @@ from channels.generic.websocket import WebsocketConsumer
 
 import random
 
-from .world import World, Entity, Turn
+from .world import World, Entity, Sprite
 
 world = World(20, 20)
 world.generate()
@@ -17,20 +17,23 @@ class Player:
         self.__name = name
         self.respawn()
 
+    def __you(self):
+        return self.entity.get_fancy_you()
+
     def show_death_message(self):
         msg = f"{self.get_fancy_name()} was killed by {self.entity.attacked_by.get_fancy_name()}"
         self.consumer.send_message_to_all("Game", msg)
 
     def show_dealt_damage(self, enemy, dmg):
-        msg = f"You hit {enemy.get_fancy_name()} for {dmg} damage!"
+        msg = f"{self.__you()} hit {enemy.get_fancy_name()} for {dmg} damage!"
         self.consumer.send_message("Game", msg)
 
     def show_taken_damage(self, dmg):
-        msg = f"{self.entity.attacked_by.get_fancy_name()} hit you for {dmg} damage!"
+        msg = f"{self.entity.attacked_by.get_fancy_name()} hit {self.__you()} for {dmg} damage!"
         self.consumer.send_message("Game", msg)
 
     def show_dodged_message(self):
-        self.consumer.send_message("Game", "You have dodged!")
+        self.consumer.send_message("Game", f"{self.__you()} have dodged!")
 
     def show_target_dodged_message(self, entity):
         self.consumer.send_message("Game", f"{entity.get_fancy_name()} has dodged!")
@@ -38,7 +41,9 @@ class Player:
     def respawn(self):
         self.entity = Entity(self.__name)
         world.add_entity(self.entity)
-        self.consumer.send_message("Game", f"You have {self.entity.hp} HP.")
+
+        msg = f"{self.__you()} have {self.entity.hp} HP."
+        self.consumer.send_message("Game", msg)
 
         self.entity.dead += self.show_death_message
         self.entity.dead += self.respawn
@@ -109,15 +114,15 @@ class RoguelikeConsumer(WebsocketConsumer):
         if not player:
             player = self.player
 
-        self.sprites = world.get_sprites()
-        player.consumer.respond("delta", player.consumer.sprites)
+        player.consumer.sprites = world.get_sprites()
+        player.consumer.respond("update", player.consumer.sprites)
 
     def delta(self, player=None):
         if not player:
             player = self.player
 
         delta = world.get_delta(player.consumer.sprites)
-        player.consumer.respond("update", delta)
+        player.consumer.respond("delta", delta)
         player.consumer.apply_delta(delta)
 
     def all(self, fun, *args, **kwargs):
@@ -136,7 +141,6 @@ class RoguelikeConsumer(WebsocketConsumer):
         self.player = Player(self, name)
         players.append(self.player)
 
-        color = self.player.entity.sprite.fg
         welcome_msg = f"{self.player.get_fancy_name()} joined the game"
         players_list = ", ".join(player.get_fancy_name() for player in players)
 
