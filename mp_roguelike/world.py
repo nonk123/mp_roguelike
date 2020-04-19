@@ -27,11 +27,11 @@ class Floor(Tile):
     def __init__(self, color="gray"):
         sprite = Sprite(random.choice(Floor.characters), color)
 
-        super().__init__(f"{color.title()} floor", sprite)
+        super().__init__(f"{color} floor", sprite)
 
 class Wall(Tile):
     def __init__(self, color="gray"):
-        super().__init__(f"{color.title()} wall", Sprite("#", color))
+        super().__init__(f"{color} wall", Sprite("#", color))
 
         self.impassable = True
 
@@ -48,13 +48,15 @@ class Turn:
 
 class Entity(Tile):
     colors = ["red", "green", "blue", "yellow", "orange", "magenta", "cyan"]
-    attack_rolls = [Die(1, 6), Die(2, 4, +2), Die(3, 4), Die(2, 6, +1)]
+    attack_rolls = [Die(1, 6, +3), Die(2, 4, +2), Die(3, 4), Die(2, 6, +1)]
 
     def __init__(self, name):
         super().__init__(name, Sprite("@", random.choice(self.colors)))
 
         self.x = -1
         self.y = -1
+
+        self.view_radius = 8
 
         self.hp = Die(2, 4, +20).roll()
 
@@ -155,9 +157,7 @@ class World:
         self.updated = Sender()
 
     def get_tile_at(self, x, y):
-        if self.is_in_bounds(x, y):
-            return self.tiles[y][x]
-        return Tile()
+        return self.tiles[y][x] if self.is_in_bounds(x, y) else Tile()
 
     def get_entities_at(self, x, y):
         if self.is_in_bounds(x, y):
@@ -189,25 +189,30 @@ class World:
 
         return sprite
 
-    def get_sprites(self):
+    def get_sprites(self, around):
         sprites = []
 
-        for y in range(self.height):
-            sprites.append([])
+        for y in range(-around.view_radius, around.view_radius + 1):
+            row = []
 
-            for x in range(self.width):
-                sprites[y].append(self.get_sprite_at(x, y))
+            for x in range(-around.view_radius, around.view_radius + 1):
+                row.append(self.get_sprite_at(x + around.x, y + around.y))
+
+            sprites.append(row)
 
         return sprites
 
-    def get_delta(self, sprites):
+    def get_delta(self, sprites, around):
         delta = {}
 
-        for y in range(self.height):
-            for x in range(self.width):
-                new_sprite = self.get_sprite_at(x, y)
+        x_offset = around.x - around.view_radius
+        y_offset = around.y - around.view_radius
 
-                if sprites[y][x] != new_sprite:
+        for y, row in enumerate(sprites):
+            for x, old_sprite in enumerate(row):
+                new_sprite = self.get_sprite_at(x + x_offset, y + y_offset)
+
+                if old_sprite != new_sprite:
                     delta[f"{x}:{y}"] = new_sprite
 
         return delta

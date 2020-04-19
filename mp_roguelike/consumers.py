@@ -1,10 +1,9 @@
-import jsonpickle
-
 from channels.generic.websocket import WebsocketConsumer
 
 import random
+import json
 
-from .world import World, Entity, Sprite
+from .world import World, Entity
 
 world = World(20, 20)
 world.generate()
@@ -81,7 +80,7 @@ class RoguelikeConsumer(WebsocketConsumer):
             self.delta_all()
 
     def receive(self, text_data):
-        decoded = jsonpickle.decode(text_data)
+        decoded = json.loads(text_data)
 
         event = decoded["e"]
 
@@ -89,10 +88,10 @@ class RoguelikeConsumer(WebsocketConsumer):
             self.handlers[event](decoded["d"])
 
     def respond(self, event, data):
-        self.send(jsonpickle.encode({
+        self.send(json.dumps({
             "e": event,
             "d": data
-        }, unpicklable=False))
+        }, default=lambda x: x.__dict__))
 
     def send_message(self, sender, text):
         self.respond("message", {
@@ -114,14 +113,14 @@ class RoguelikeConsumer(WebsocketConsumer):
         if not player:
             player = self.player
 
-        player.consumer.sprites = world.get_sprites()
+        player.consumer.sprites = world.get_sprites(self.player.entity)
         player.consumer.respond("update", player.consumer.sprites)
 
     def delta(self, player=None):
         if not player:
             player = self.player
 
-        delta = world.get_delta(player.consumer.sprites)
+        delta = world.get_delta(player.consumer.sprites, player.entity)
         player.consumer.respond("delta", delta)
         player.consumer.apply_delta(delta)
 
