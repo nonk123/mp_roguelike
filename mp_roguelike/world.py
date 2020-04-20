@@ -15,10 +15,12 @@ class Tile:
         self.sprite = sprite
         self.impassable = False
 
-    def get_fancy_name(self):
+    @property
+    def fancy_name(self):
         return color(self.sprite.fg, self.name)
 
-    def get_fancy_you(self):
+    @property
+    def fancy_you(self):
         return color(self.sprite.fg, "You")
 
 class Floor(Tile):
@@ -75,7 +77,7 @@ class Entity(Tile):
     def remove(self):
         self.world.remove_entity(self)
 
-    def random_position(self):
+    def set_random_position(self):
         while self.world.is_occupied(self.x, self.y):
             self.x = random.randint(0, self.world.width)
             self.y = random.randint(0, self.world.height)
@@ -100,7 +102,7 @@ class Entity(Tile):
 
     def on_add(self, world):
         self.world = world
-        self.random_position()
+        self.set_random_position()
 
     def on_remove(self):
         self.world = None

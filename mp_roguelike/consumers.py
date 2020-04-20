@@ -16,32 +16,29 @@ class Player:
         self.__name = name
         self.respawn()
 
-    def __you(self):
-        return self.entity.get_fancy_you()
-
     def show_death_message(self):
-        msg = f"{self.get_fancy_name()} was killed by {self.entity.attacked_by.get_fancy_name()}"
+        msg = f"{self.entity.fancy_name} was killed by {self.entity.attacked_by.fancy_name}"
         self.consumer.send_message_to_all("Game", msg)
 
     def show_dealt_damage(self, enemy, dmg):
-        msg = f"{self.__you()} hit {enemy.get_fancy_name()} for {dmg} damage!"
+        msg = f"{self.entity.fancy_you} hit {enemy.fancy_name} for {dmg} damage!"
         self.consumer.send_message("Game", msg)
 
     def show_taken_damage(self, dmg):
-        msg = f"{self.entity.attacked_by.get_fancy_name()} hit {self.__you()} for {dmg} damage!"
+        msg = f"{self.entity.attacked_by.fancy_name} hit {self.entity.fancy_you} for {dmg} damage!"
         self.consumer.send_message("Game", msg)
 
     def show_dodged_message(self):
-        self.consumer.send_message("Game", f"{self.__you()} have dodged!")
+        self.consumer.send_message("Game", f"{self.entity.fancy_you} have dodged!")
 
     def show_target_dodged_message(self, entity):
-        self.consumer.send_message("Game", f"{entity.get_fancy_name()} has dodged!")
+        self.consumer.send_message("Game", f"{entity.fancy_name} has dodged!")
 
     def respawn(self):
         self.entity = Entity(self.__name)
         world.add_entity(self.entity)
 
-        msg = f"{self.__you()} have {self.entity.hp} HP."
+        msg = f"{self.entity.fancy_you} have {self.entity.hp} HP."
         self.consumer.send_message("Game", msg)
 
         self.entity.dead += self.show_death_message
@@ -50,9 +47,6 @@ class Player:
         self.entity.attacked += self.show_dealt_damage
         self.entity.dodged += self.show_dodged_message
         self.entity.target_dodged += self.show_target_dodged_message
-
-    def get_fancy_name(self):
-        return self.entity.get_fancy_name()
 
     def on_remove(self):
         self.entity.remove()
@@ -71,7 +65,7 @@ class RoguelikeConsumer(WebsocketConsumer):
 
     def disconnect(self, close_code):
         if hasattr(self, "player") and self.player:
-            goodbye_msg = f"{self.player.get_fancy_name()} disconnected"
+            goodbye_msg = f"{self.player.entity.fancy_name} disconnected"
             self.send_message_to_all("Server", goodbye_msg)
 
             self.player.on_remove()
@@ -140,8 +134,8 @@ class RoguelikeConsumer(WebsocketConsumer):
         self.player = Player(self, name)
         players.append(self.player)
 
-        welcome_msg = f"{self.player.get_fancy_name()} joined the game"
-        players_list = ", ".join(player.get_fancy_name() for player in players)
+        welcome_msg = f"{self.player.entity.fancy_name} joined the game"
+        players_list = ", ".join(player.entity.fancy_name for player in players)
 
         self.send_message_to_all("Server", welcome_msg)
         self.send_message("Online", players_list)
@@ -166,4 +160,4 @@ class RoguelikeConsumer(WebsocketConsumer):
 
     def on_chat(self, data):
         if data["message"]:
-            self.send_message_to_all(self.player.get_fancy_name(), data["message"])
+            self.send_message_to_all(self.player.entity.fancy_name, data["message"])
