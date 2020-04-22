@@ -61,7 +61,7 @@ class RoguelikeConsumer(WebsocketConsumer):
 
         self.accept();
 
-        world.updated += self.delta_all
+        world.updated += self.update_all
 
     def disconnect(self, close_code):
         if hasattr(self, "player") and self.player:
@@ -71,7 +71,7 @@ class RoguelikeConsumer(WebsocketConsumer):
             self.player.on_remove()
             players.remove(self.player)
 
-            self.delta_all()
+            self.update_all()
 
     def receive(self, text_data):
         decoded = json.loads(text_data)
@@ -96,34 +96,23 @@ class RoguelikeConsumer(WebsocketConsumer):
     def send_message_to_all(self, sender, text):
         self.all(lambda player: player.consumer.send_message(sender, text))
 
-    def apply_delta(self, delta):
-        for pos, sprite in delta.items():
-            x = int(pos.split(":")[0])
-            y = int(pos.split(":")[1])
-
-            self.sprites[y][x] = sprite
+    def all(self, fun, *args, **kwargs):
+        for player in players:
+            fun(player, *args, **kwargs)
 
     def update(self, player=None):
         if not player:
             player = self.player
 
-        player.consumer.sprites = world.get_sprites(self.player.entity)
-        player.consumer.respond("update", player.consumer.sprites)
+        tiles, entities = world.get_visible(player.entity)
 
-    def delta(self, player=None):
-        if not player:
-            player = self.player
+        player.consumer.respond("update", {
+            "tiles": tiles,
+            "entities": entities
+        })
 
-        delta = world.get_delta(player.consumer.sprites, player.entity)
-        player.consumer.respond("delta", delta)
-        player.consumer.apply_delta(delta)
-
-    def all(self, fun, *args, **kwargs):
-        for player in players:
-            fun(player, *args, **kwargs)
-
-    def delta_all(self):
-        self.all(self.delta)
+    def update_all(self):
+        self.all(self.update)
 
     def on_auth(self, data):
         if not data or "name" not in data:
@@ -140,8 +129,7 @@ class RoguelikeConsumer(WebsocketConsumer):
         self.send_message_to_all("Server", welcome_msg)
         self.send_message("Online", players_list)
 
-        self.update(self.player)
-        self.all(self.delta)
+        self.update_all()
 
     def on_move_turn(self, data):
         self.player.entity.queue_move(data["dx"], data["dy"])

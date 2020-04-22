@@ -1,49 +1,41 @@
 const gameElement = document.getElementById("game");
 const statusElement = document.getElementById("status");
 
-const display = [];
-
-function draw() {
-    gameElement.textContent = "";
-
-    for (row of display) {
-        const rowElement = document.createElement("tr");
-
-        for (sprite of row) {
-            const style = `\
+function getSpriteStyle(sprite) {
+    return `\
 color: ${sprite.fg};
 background: ${sprite.bg};
 font-size: 15px;`;
+}
+
+function draw(data) {
+    const display = data.tiles;
+
+    for (const entity of data.entities) {
+        display[entity.y][entity.x] = entity;
+    }
+
+    gameElement.textContent = "";
+
+    for (const row of display) {
+        const rowElement = document.createElement("tr");
+
+        for (const tile of row) {
+            const sprite = tile.sprite;
 
             const dataElement = document.createElement("td");
 
             const spriteElement = document.createElement("span");
-            spriteElement.style = style;
+            spriteElement.style = getSpriteStyle(sprite);
             spriteElement.textContent = sprite.character;
 
             dataElement.appendChild(spriteElement);
+
             rowElement.appendChild(dataElement);
         }
 
         gameElement.appendChild(rowElement);
     }
-}
-
-function updateDisplay(sprites) {
-    if (Array.isArray(sprites)) {
-        for (let y = 0; y < sprites.length; y++) {
-            display[y] = sprites[y].slice();
-        }
-    } else {
-        for (pos in sprites) {
-            const x = pos.split(":")[0];
-            const y = pos.split(":")[1];
-
-            display[y][x] = sprites[pos];
-        }
-    }
-
-    draw();
 }
 
 function displayMessage(data) {
@@ -55,8 +47,7 @@ function displayMessage(data) {
 }
 
 const handlers = {
-    "update": updateDisplay,
-    "delta": updateDisplay,
+    "update": draw,
     "message": displayMessage
 };
 

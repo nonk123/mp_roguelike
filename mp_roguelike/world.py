@@ -77,6 +77,22 @@ class Entity(Tile):
     def remove(self):
         self.world.remove_entity(self)
 
+    def stripped(self):
+        tile = Tile(self.name, self.sprite)
+
+        extras = {
+            "x": self.x,
+            "y": self.y,
+            "hp": self.hp,
+            "view_radius": self.view_radius,
+            "attack_roll": self.attack_roll
+        }
+
+        for k, v in extras.items():
+            setattr(tile, k, v)
+
+        return tile
+
     def set_random_position(self):
         while self.world.is_occupied(self.x, self.y):
             self.x = random.randint(0, self.world.width)
@@ -96,6 +112,12 @@ class Entity(Tile):
 
     def is_at(self, x, y):
         return self.x == x and self.y == y
+
+    def can_see(self, x, y):
+        dx = self.x - x
+        dy = self.y - y
+
+        return dx*dx + dy*dy <= self.view_radius * self.view_radius
 
     def is_in_movement_range(self, dx, dy):
         return abs(dx) <= 1 and abs(dy) <= 1
@@ -191,33 +213,36 @@ class World:
 
         return sprite
 
-    def get_sprites(self, around):
-        sprites = []
+    def get_visible(self, entity):
+        tiles = []
 
-        for y in range(-around.view_radius, around.view_radius + 1):
+        for y in range(-entity.view_radius, entity.view_radius + 1):
+            y += entity.y
+
             row = []
 
-            for x in range(-around.view_radius, around.view_radius + 1):
-                row.append(self.get_sprite_at(x + around.x, y + around.y))
+            for x in range(-entity.view_radius, entity.view_radius + 1):
+                x += entity.x
 
-            sprites.append(row)
+                if entity.can_see(x, y):
+                    row.append(self.get_tile_at(x, y))
+                else:
+                    row.append(Tile())
 
-        return sprites
+            tiles.append(row)
 
-    def get_delta(self, sprites, around):
-        delta = {}
+        entities = []
 
-        x_offset = around.x - around.view_radius
-        y_offset = around.y - around.view_radius
+        for other in self.entities:
+            if entity.can_see(other.x, other.y):
+                other = other.stripped()
 
-        for y, row in enumerate(sprites):
-            for x, old_sprite in enumerate(row):
-                new_sprite = self.get_sprite_at(x + x_offset, y + y_offset)
+                other.x += entity.view_radius - entity.x
+                other.y += entity.view_radius - entity.y
 
-                if old_sprite != new_sprite:
-                    delta[f"{x}:{y}"] = new_sprite
+                entities.append(other)
 
-        return delta
+        return tiles, entities
 
     def queue_turn(self, turn):
         if not turn.entity.turn_done:
