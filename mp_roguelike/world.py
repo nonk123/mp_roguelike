@@ -3,37 +3,30 @@ import random
 from .util import color, Die
 from .event import Sender
 
-class Sprite:
-    def __init__(self, character="\u00a0", fg="gray", bg="black"):
-        self.character = character
-        self.fg = fg
-        self.bg = bg
-
 class Tile:
-    def __init__(self, name="thin air", sprite=Sprite()):
+    def __init__(self, name="thin air", character="\u00a0", color="gray"):
         self.name = name
-        self.sprite = sprite
+        self.character = character
+        self.color = color
         self.impassable = False
 
     @property
     def fancy_name(self):
-        return color(self.sprite.fg, self.name)
+        return color(self.color, self.name)
 
     @property
     def fancy_you(self):
-        return color(self.sprite.fg, "You")
+        return color(self.color, "You")
 
 class Floor(Tile):
     characters = (".", ".", ".", ",")
 
     def __init__(self, color="gray"):
-        sprite = Sprite(random.choice(Floor.characters), color)
-
-        super().__init__(f"{color} floor", sprite)
+        super().__init__(f"{color} floor", random.choice(self.characters), color)
 
 class Wall(Tile):
     def __init__(self, color="gray"):
-        super().__init__(f"{color} wall", Sprite("#", color))
+        super().__init__(f"{color} wall", "#", color)
 
         self.impassable = True
 
@@ -50,10 +43,11 @@ class Turn:
 
 class Entity(Tile):
     colors = ["red", "green", "blue", "yellow", "orange", "magenta", "cyan"]
+
     attack_rolls = [Die(1, 6, +3), Die(2, 4, +2), Die(3, 4), Die(2, 6, +1)]
 
     def __init__(self, name):
-        super().__init__(name, Sprite("@", random.choice(self.colors)))
+        super().__init__(name, "@", random.choice(self.colors))
 
         self.x = -1
         self.y = -1
@@ -78,7 +72,7 @@ class Entity(Tile):
         self.world.remove_entity(self)
 
     def stripped(self):
-        tile = Tile(self.name, self.sprite)
+        tile = Tile(self.name, self.character, self.color)
 
         extras = {
             "x": self.x,
@@ -204,14 +198,6 @@ class World:
     def remove_entity(self, entity):
         entity.on_remove()
         self.entities.remove(entity)
-
-    def get_sprite_at(self, x, y):
-        sprite = self.get_tile_at(x, y).sprite
-
-        for entity in self.get_entities_at(x, y):
-            sprite = entity.sprite
-
-        return sprite
 
     def get_visible(self, entity):
         tiles = []

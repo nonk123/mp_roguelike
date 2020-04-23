@@ -1,10 +1,10 @@
 const gameElement = document.getElementById("game");
 const statusElement = document.getElementById("status");
 
-function getSpriteStyle(sprite) {
+function getTileStyle(tile) {
     return `\
-color: ${sprite.fg};
-background: ${sprite.bg};
+color: ${tile.color};
+background: black;
 font-size: 15px;`;
 }
 
@@ -21,15 +21,12 @@ function draw(data) {
         const rowElement = document.createElement("tr");
 
         for (const tile of row) {
-            const sprite = tile.sprite;
-
             const dataElement = document.createElement("td");
 
-            const spriteElement = document.createElement("span");
-            spriteElement.style = getSpriteStyle(sprite);
-            spriteElement.textContent = sprite.character;
-
-            dataElement.appendChild(spriteElement);
+            const tileElement = document.createElement("span");
+            tileElement.style = getTileStyle(tile);
+            tileElement.textContent = tile.character;
+            dataElement.appendChild(tileElement);
 
             rowElement.appendChild(dataElement);
         }
