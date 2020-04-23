@@ -1,13 +1,6 @@
 const gameElement = document.getElementById("game");
 const statusElement = document.getElementById("status");
 
-function getTileStyle(tile) {
-    return `\
-color: ${tile.color};
-background: black;
-font-size: 15px;`;
-}
-
 display = [];
 
 function draw(data) {
@@ -165,5 +158,3 @@ document.addEventListener("keyup", event => {
         onKeyPress(key, keys);
     }
 });
-
-gameElement.focus();
