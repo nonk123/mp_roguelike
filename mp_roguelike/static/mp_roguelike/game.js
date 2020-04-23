@@ -24,6 +24,7 @@ function draw(data) {
     const size = Math.floor(gameElement.height / display.length);
 
     ctx.font = `${size}px monospace`;
+    ctx.textBaseline = "top";
 
     for (const [y, row] of display.entries()) {
         for (const [x, tile] of row.entries()) {
@@ -36,7 +37,7 @@ function draw(data) {
 
             if (tile.character && tile.character != " ") {
                 ctx.fillStyle = tile.color;
-                ctx.fillText(tile.character, dx, dy + size)
+                ctx.fillText(tile.character, dx, dy);
             }
         }
     }
