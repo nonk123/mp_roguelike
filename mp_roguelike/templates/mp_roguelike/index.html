@@ -4,45 +4,51 @@
   <head>
     <title>Multiplayer Roguelike</title>
     <style>
-      body, tr, td {
-          margin: 0;
-          padding: 0;
-      }
+     body, tr, td {
+         margin: 0;
+         padding: 0;
+     }
 
-      #game, .layout {
-          border-collapse: collapse;
-      }
+     #game, .layout {
+         border-collapse: collapse;
+     }
 
-      .ui {
-          padding: 7px;
-      }
+     #game {
+         padding: 12%;
+         width: 76%;
+         height: 76%;
+     }
 
-      .vsplit {
-          width: 50vw;
-          height: 100vh;
-          top: 0px;
-          bottom: 0px;
-      }
+     .ui {
+         padding: 7px;
+     }
 
-      #status {
-          vertical-align: top;
-          overflow-y: scroll;
-      }
+     .vsplit {
+         width: 50vw;
+         height: 100vh;
+         top: 0px;
+         bottom: 0px;
+     }
 
-      * {
-          font-size: 12px;
-          font-family: monospace;
-          box-sizing: border-box;
-          background: black;
-          color: gray;
-      }
+     #status {
+         vertical-align: top;
+         overflow-y: scroll;
+     }
+
+     * {
+         font-size: 12px;
+         font-family: monospace;
+         box-sizing: border-box;
+         background: black;
+         color: gray;
+     }
     </style>
   </head>
   <body>
     <table class="layout">
       <tr>
         <td class="ui vsplit" style="border-right: 2px solid gray;">
-          <table id="game" class="ui" style="margin: 0 auto;"></table>
+          <canvas id="game" class="ui"></canvas>
         </td>
         <td class="ui vsplit" style="vertical-align: top;">
           <div id="status" style="height: calc(100vh - 48px);"></div>

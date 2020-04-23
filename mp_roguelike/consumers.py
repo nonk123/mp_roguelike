@@ -51,6 +51,12 @@ class Player:
     def on_remove(self):
         self.entity.remove()
 
+def update_all():
+    for player in players:
+        player.consumer.update()
+
+world.updated += update_all
+
 class RoguelikeConsumer(WebsocketConsumer):
     def connect(self):
         self.handlers = {
@@ -61,8 +67,6 @@ class RoguelikeConsumer(WebsocketConsumer):
 
         self.accept();
 
-        world.updated += self.update_all
-
     def disconnect(self, close_code):
         if hasattr(self, "player") and self.player:
             goodbye_msg = f"{self.player.entity.fancy_name} disconnected"
@@ -71,7 +75,7 @@ class RoguelikeConsumer(WebsocketConsumer):
             self.player.on_remove()
             players.remove(self.player)
 
-            self.update_all()
+            update_all()
 
     def receive(self, text_data):
         decoded = json.loads(text_data)
@@ -111,9 +115,6 @@ class RoguelikeConsumer(WebsocketConsumer):
             "entities": entities
         })
 
-    def update_all(self):
-        self.all(self.update)
-
     def on_auth(self, data):
         if not data or "name" not in data:
             self.close()
@@ -129,7 +130,7 @@ class RoguelikeConsumer(WebsocketConsumer):
         self.send_message_to_all("Server", welcome_msg)
         self.send_message("Online", players_list)
 
-        self.update_all()
+        update_all()
 
     def on_move_turn(self, data):
         self.player.entity.queue_move(data["dx"], data["dy"])

@@ -4,9 +4,10 @@ from .util import color, Die
 from .event import Sender
 
 class Tile:
-    def __init__(self, name="thin air", character="\u00a0", color="gray"):
+    def __init__(self, name="thin air", character=" ", color="gray", background="black"):
         self.name = name
         self.character = character
+        self.background = background
         self.color = color
         self.impassable = False
 
@@ -21,12 +22,12 @@ class Tile:
 class Floor(Tile):
     characters = (".", ".", ".", ",")
 
-    def __init__(self, color="gray"):
-        super().__init__(f"{color} floor", random.choice(self.characters), color)
+    def __init__(self, background="gray"):
+        super().__init__(f"{color} floor", random.choice(self.characters), "gray", background)
 
 class Wall(Tile):
     def __init__(self, color="gray"):
-        super().__init__(f"{color} wall", "#", color)
+        super().__init__(f"{color} wall", "#", "black", color)
 
         self.impassable = True
 

@@ -8,30 +8,44 @@ background: black;
 font-size: 15px;`;
 }
 
-function draw(data) {
-    const display = data.tiles;
+display = [];
 
-    for (const entity of data.entities) {
-        display[entity.y][entity.x] = entity;
+function draw(data) {
+    for (const [y, row] of data.tiles.entries()) {
+        display[y] = row.slice();
     }
 
-    gameElement.textContent = "";
+    for (const entity of data.entities) {
+        display[entity.y][entity.x] = {
+            character: entity.character,
+            color: entity.color,
+            background: display[entity.y][entity.x].background
+        };
+    }
 
-    for (const row of display) {
-        const rowElement = document.createElement("tr");
+    gameElement.width = gameElement.clientWidth;
+    gameElement.height = gameElement.clientHeight;
 
-        for (const tile of row) {
-            const dataElement = document.createElement("td");
+    const ctx = gameElement.getContext("2d");
 
-            const tileElement = document.createElement("span");
-            tileElement.style = getTileStyle(tile);
-            tileElement.textContent = tile.character;
-            dataElement.appendChild(tileElement);
+    const size = Math.floor(gameElement.height / display.length);
 
-            rowElement.appendChild(dataElement);
+    ctx.font = `${size}px monospace`;
+
+    for (const [y, row] of display.entries()) {
+        for (const [x, tile] of row.entries()) {
+            const [dx, dy] = [x * size, y * size];
+
+            if (tile.background) {
+                ctx.fillStyle = tile.background;
+                ctx.fillRect(dx, dy, size, size);
+            }
+
+            if (tile.character && tile.character != " ") {
+                ctx.fillStyle = tile.color;
+                ctx.fillText(tile.character, dx, dy + size)
+            }
         }
-
-        gameElement.appendChild(rowElement);
     }
 }
 
