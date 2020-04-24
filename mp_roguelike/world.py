@@ -90,11 +90,9 @@ class AggressiveAI(AI):
         self.entity.turn_done = True
 
     def find_closest_enemy(self):
-        entities = self.entity.world.get_visible_entities(self.entity)
-
         closest = None
 
-        for entity in entities:
+        for entity in self.entity.get_visible_entities():
             if closest is None:
                 ddist = -10
             else:
@@ -159,6 +157,12 @@ class Entity(Tile):
 
         return tile
 
+    def get_visible_entities(self):
+        return self.world.get_visible_entities(self)
+
+    def get_renderable(self):
+        return self.world.get_renderable(self)
+
     def set_random_position(self):
         while self.world.is_occupied(self.x, self.y):
             self.x = random.randint(0, self.world.width)
@@ -173,8 +177,9 @@ class Entity(Tile):
             self.die()
 
     def die(self):
-        self.remove()
+        self.world.entity_died(self)
         self.dead()
+        self.remove()
 
     def is_at(self, x, y):
         return self.x == x and self.y == y
@@ -231,8 +236,10 @@ class Entity(Tile):
             self.moved(dx, dy)
 
     def queue_move(self, dx, dy):
-        if self.is_in_movement_range(dx, dy):
-            expected_targets = self.world.get_entities_at(self.x + dx, self.y + dy)
+        x, y = self.x + dx, self.y + dy
+
+        if self.is_in_movement_range(dx, dy) and not self.world.is_occupied(x, y):
+            expected_targets = self.world.get_entities_at(x, y)
             turn = Turn(self, self.__move, dx, dy, expected_targets)
             self.world.queue_turn(turn)
 
@@ -245,6 +252,7 @@ class World:
         self.queued_turns = []
 
         self.updated = Sender()
+        self.entity_died = Sender()
 
     def get_tile_at(self, x, y):
         return self.tiles[y][x] if self.is_in_bounds(x, y) else Tile()
@@ -298,7 +306,7 @@ class World:
 
             tiles.append(row)
 
-        entities = self.get_visible_entities(entity)
+        entities = entity.get_visible_entities()
 
         for i, other in enumerate(entities):
             other = other.stripped()
@@ -316,7 +324,7 @@ class World:
         turn.entity.turn_done = True
 
     def update(self):
-        while len(self.entities) < 10:
+        while len(self.entities) < 5:
             self.add_entity(Entity("Gebastel", AggressiveAI))
 
         for entity in self.entities:

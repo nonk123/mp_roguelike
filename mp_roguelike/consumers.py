@@ -16,8 +16,13 @@ class Player:
         self.__name = name
         self.respawn()
 
-    def show_death_message(self):
-        msg = f"{self.entity.fancy_name} was killed by {self.entity.attacked_by.fancy_name}"
+        world.entity_died += self.show_death_message
+
+    def show_death_message(self, entity):
+        if entity not in self.entity.get_visible_entities():
+            return
+
+        msg = f"{entity.fancy_name} was killed by {entity.attacked_by.fancy_name}"
         self.consumer.send_message_to_all("Game", msg)
 
     def show_dealt_damage(self, enemy, dmg):
@@ -41,7 +46,6 @@ class Player:
         msg = f"{self.entity.fancy_you} have {self.entity.hp} HP."
         self.consumer.send_message("Game", msg)
 
-        self.entity.dead += self.show_death_message
         self.entity.dead += self.respawn
         self.entity.damaged += self.show_taken_damage
         self.entity.attacked += self.show_dealt_damage
@@ -105,7 +109,7 @@ class RoguelikeConsumer(WebsocketConsumer):
         if not player:
             player = self.player
 
-        tiles, entities = world.get_renderable(player.entity)
+        tiles, entities = player.entity.get_renderable()
 
         player.consumer.respond("update", {
             "tiles": tiles,
