@@ -1,6 +1,6 @@
 import random
 
-from .util import color, sign, Die
+from .util import color, sign, get_param, Die
 from .event import Sender
 
 class Tile:
@@ -71,7 +71,6 @@ class AI:
             self.queued_path.append((*at,))
 
     def is_enemy(self, entity):
-        # TODO: smarter check.
         return not entity.is_at(self.entity.x, self.entity.y)
 
     def attack(self, entity):
@@ -89,6 +88,9 @@ class AggressiveAI(AI):
         super().think()
         self.entity.turn_done = True
 
+    def is_enemy(self, entity):
+        return super().is_enemy(entity) and not entity.ai.can_think
+
     def find_closest_enemy(self):
         closest = None
 
@@ -104,24 +106,25 @@ class AggressiveAI(AI):
         return closest
 
 class Entity(Tile):
-    colors = ["red", "green", "blue", "yellow", "orange", "magenta", "cyan"]
+    def __init__(self, params):
+        name = get_param(params, "name", "meh")
+        character = get_param(params, "character", "g")
+        color = get_param(params, "color", "gray")
 
-    attack_rolls = [Die(1, 6, +3), Die(2, 4, +2), Die(3, 4), Die(2, 6, +1)]
-
-    def __init__(self, name, ai_type=AI):
-        super().__init__(name, "@", random.choice(self.colors))
+        super().__init__(name, character, color)
 
         self.x = -1
         self.y = -1
 
-        self.view_radius = 8
+        self.view_radius = get_param(params, "view_radius", 8)
 
-        self.hp = Die(2, 4, +20).roll()
+        self.hp = get_param(params, "hp_roll", Die(1, 4, +10)).roll()
 
         self.attacked_by = Tile()
-        self.attack_roll = random.choice(self.attack_rolls)
 
-        self.ai = ai_type(self)
+        self.attack_roll = get_param(params, "attack_roll", Die(1, 6))
+
+        self.ai = get_param(params, "ai_type", AggressiveAI)(self)
 
         self.turn_done = False
 
@@ -330,8 +333,15 @@ class World:
         turn.entity.turn_done = True
 
     def update(self):
-        while len(self.entities) < 5:
-            self.add_entity(Entity("Gebastel", AggressiveAI))
+        while len([e for e in self.entities if e.ai.can_think]) <= 8:
+            self.add_entity(Entity({
+                "name": "Goblin",
+                "character": "g",
+                "color": "darkgreen",
+                "hp_roll": Die(1, 3, +4),
+                "attack_roll": Die(1, 4, -1),
+                "view_radius": 5
+            }))
 
         for entity in self.entities:
             if not entity.ai.can_think and not entity.turn_done:

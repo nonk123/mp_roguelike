@@ -3,18 +3,21 @@ from channels.generic.websocket import WebsocketConsumer
 import random
 import json
 
+from .util import Die
 from .world import World, Entity, DummyAI
 
 world = World(20, 20)
 world.generate()
+world.update()
 
 players = []
+
+PLAYER_COLORS = ["red", "green", "blue", "yellow", "darkgray"]
 
 class Player:
     def __init__(self, consumer, name):
         self.consumer = consumer
         self.__name = name
-        self.respawn()
 
         world.entity_died += self.show_death_message
 
@@ -40,7 +43,16 @@ class Player:
         self.consumer.send_message("Game", f"{entity.fancy_name} has dodged!")
 
     def respawn(self):
-        self.entity = Entity(self.__name, DummyAI)
+        self.entity = Entity({
+            "name": self.__name,
+            "character": "@",
+            "color": PLAYER_COLORS[len(players) % len(PLAYER_COLORS)],
+            "ai_type": DummyAI,
+            "hp_roll": Die(3, 8, +40),
+            "attack_roll": Die(2, 6, +2),
+            "view_radius": 10
+        })
+
         world.add_entity(self.entity)
 
         msg = f"{self.entity.fancy_you} have {self.entity.hp} HP."
@@ -123,6 +135,7 @@ class RoguelikeConsumer(WebsocketConsumer):
         name = data["name"] or f"Guest{random.randint(1, 10000):04}"
         self.player = Player(self, name)
         players.append(self.player)
+        self.player.respawn()
 
         welcome_msg = f"{self.player.entity.fancy_name} joined the game"
         players_list = ", ".join(player.entity.fancy_name for player in players)
