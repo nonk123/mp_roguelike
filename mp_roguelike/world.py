@@ -1,6 +1,6 @@
 import random
 
-from .util import color, Die
+from .util import color, sign, Die
 from .event import Sender
 
 class Tile:
@@ -42,12 +42,75 @@ class Turn:
         if self.entity.world:
             self.action(*self.args, **self.kwargs)
 
+class AI:
+    def __init__(self, entity):
+        self.entity = entity
+        self.queued_path = []
+
+    @property
+    def can_think(self):
+        return True
+
+    def think(self):
+        if self.queued_path:
+            x, y = self.queued_path.pop(0)
+            self.move(x - self.entity.x, y - self.entity.y)
+
+    def move(self, dx, dy):
+        self.entity.queue_move(dx, dy)
+
+    def move_to(self, x, y):
+        self.queued_path = []
+
+        at = [self.entity.x, self.entity.y]
+
+        while at != [x, y]:
+            at[0] += sign(x - at[0])
+            at[1] += sign(y - at[1])
+
+            self.queued_path.append((*at,))
+
+    def is_enemy(self, entity):
+        # TODO: smarter check.
+        return not entity.is_at(self.entity.x, self.entity.y)
+
+    def attack(self, entity):
+        if entity is not None:
+            self.move_to(entity.x, entity.y)
+
+class DummyAI(AI):
+    @property
+    def can_think(self):
+        return False
+
+class AggressiveAI(AI):
+    def think(self):
+        self.attack(self.find_closest_enemy())
+        super().think()
+        self.entity.turn_done = True
+
+    def find_closest_enemy(self):
+        entities = self.entity.world.get_visible_entities(self.entity)
+
+        closest = None
+
+        for entity in entities:
+            if closest is None:
+                ddist = -10
+            else:
+                ddist = entity.dist(self.entity) - closest.dist(self.entity)
+
+            if self.is_enemy(entity) and ddist < 0:
+                closest = entity
+
+        return closest
+
 class Entity(Tile):
     colors = ["red", "green", "blue", "yellow", "orange", "magenta", "cyan"]
 
     attack_rolls = [Die(1, 6, +3), Die(2, 4, +2), Die(3, 4), Die(2, 6, +1)]
 
-    def __init__(self, name):
+    def __init__(self, name, ai_type=AI):
         super().__init__(name, "@", random.choice(self.colors))
 
         self.x = -1
@@ -60,6 +123,8 @@ class Entity(Tile):
         self.attacked_by = Tile()
         self.attack_roll = random.choice(self.attack_rolls)
 
+        self.ai = ai_type(self)
+
         self.turn_done = False
 
         self.damaged = Sender()
@@ -71,6 +136,12 @@ class Entity(Tile):
 
     def remove(self):
         self.world.remove_entity(self)
+
+    def dist(self, other):
+        dx = other.x - self.x
+        dy = other.y - self.y
+
+        return dx*dx + dy*dy
 
     def stripped(self):
         tile = Tile(self.name, self.character, self.color)
@@ -200,7 +271,16 @@ class World:
         entity.on_remove()
         self.entities.remove(entity)
 
-    def get_visible(self, entity):
+    def get_visible_entities(self, around):
+        visible = []
+
+        for other in self.entities:
+            if around.can_see(other.x, other.y):
+                visible.append(other)
+
+        return visible
+
+    def get_renderable(self, entity):
         tiles = []
 
         for y in range(-entity.view_radius, entity.view_radius + 1):
@@ -218,16 +298,15 @@ class World:
 
             tiles.append(row)
 
-        entities = []
+        entities = self.get_visible_entities(entity)
 
-        for other in self.entities:
-            if entity.can_see(other.x, other.y):
-                other = other.stripped()
+        for i, other in enumerate(entities):
+            other = other.stripped()
 
-                other.x += entity.view_radius - entity.x
-                other.y += entity.view_radius - entity.y
+            other.x += entity.view_radius - entity.x
+            other.y += entity.view_radius - entity.y
 
-                entities.append(other)
+            entities[i] = other
 
         return tiles, entities
 
@@ -237,8 +316,14 @@ class World:
         turn.entity.turn_done = True
 
     def update(self):
-        if False in [entity.turn_done for entity in self.entities]:
-            return
+        while len(self.entities) < 10:
+            self.add_entity(Entity("Gebastel", AggressiveAI))
+
+        for entity in self.entities:
+            if not entity.ai.can_think and not entity.turn_done:
+                return
+
+            entity.ai.think()
 
         for turn in self.queued_turns:
             turn.do()

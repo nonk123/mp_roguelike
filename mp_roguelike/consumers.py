@@ -3,7 +3,7 @@ from channels.generic.websocket import WebsocketConsumer
 import random
 import json
 
-from .world import World, Entity
+from .world import World, Entity, DummyAI
 
 world = World(20, 20)
 world.generate()
@@ -35,7 +35,7 @@ class Player:
         self.consumer.send_message("Game", f"{entity.fancy_name} has dodged!")
 
     def respawn(self):
-        self.entity = Entity(self.__name)
+        self.entity = Entity(self.__name, DummyAI)
         world.add_entity(self.entity)
 
         msg = f"{self.entity.fancy_you} have {self.entity.hp} HP."
@@ -47,9 +47,6 @@ class Player:
         self.entity.attacked += self.show_dealt_damage
         self.entity.dodged += self.show_dodged_message
         self.entity.target_dodged += self.show_target_dodged_message
-
-    def on_remove(self):
-        self.entity.remove()
 
 def update_all():
     for player in players:
@@ -72,7 +69,7 @@ class RoguelikeConsumer(WebsocketConsumer):
             goodbye_msg = f"{self.player.entity.fancy_name} disconnected"
             self.send_message_to_all("Server", goodbye_msg)
 
-            self.player.on_remove()
+            self.player.entity.remove()
             players.remove(self.player)
 
             update_all()
@@ -108,7 +105,7 @@ class RoguelikeConsumer(WebsocketConsumer):
         if not player:
             player = self.player
 
-        tiles, entities = world.get_visible(player.entity)
+        tiles, entities = world.get_renderable(player.entity)
 
         player.consumer.respond("update", {
             "tiles": tiles,
@@ -117,8 +114,7 @@ class RoguelikeConsumer(WebsocketConsumer):
 
     def on_auth(self, data):
         if not data or "name" not in data:
-            self.close()
-            return
+            return self.close()
 
         name = data["name"] or f"Guest{random.randint(1, 10000):04}"
         self.player = Player(self, name)
@@ -133,7 +129,7 @@ class RoguelikeConsumer(WebsocketConsumer):
         update_all()
 
     def on_move_turn(self, data):
-        self.player.entity.queue_move(data["dx"], data["dy"])
+        self.player.entity.ai.move(data["dx"], data["dy"])
 
     def on_turn(self, data):
         turn_handlers = {

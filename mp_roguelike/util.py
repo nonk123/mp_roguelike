@@ -3,6 +3,9 @@ import random
 def color(color, text):
     return f'<span style="color: {color};">{text}</span>'
 
+def sign(x):
+    return (x > 0) - (x < 0)
+
 class Die:
     def __init__(self, count, sides, inc=0):
         self.count = count
