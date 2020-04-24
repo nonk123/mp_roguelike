@@ -18,6 +18,7 @@ class Player:
     def __init__(self, consumer, name):
         self.consumer = consumer
         self.__name = name
+        self.__color = PLAYER_COLORS[len(players) % len(PLAYER_COLORS)]
 
         world.entity_died += self.show_death_message
 
@@ -46,7 +47,7 @@ class Player:
         self.entity = Entity({
             "name": self.__name,
             "character": "@",
-            "color": PLAYER_COLORS[len(players) % len(PLAYER_COLORS)],
+            "color": self.__color,
             "ai_type": DummyAI,
             "hp_roll": Die(3, 8, +40),
             "attack_roll": Die(2, 6, +2),
