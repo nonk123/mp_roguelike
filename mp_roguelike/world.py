@@ -158,10 +158,16 @@ class Entity(Tile):
         return tile
 
     def get_visible_entities(self):
-        return self.world.get_visible_entities(self)
+        if self.world:
+            return self.world.get_visible_entities(self)
+        else:
+            return []
 
     def get_renderable(self):
-        return self.world.get_renderable(self)
+        if self.world:
+            return self.world.get_renderable(self)
+        else:
+            return [], []
 
     def set_random_position(self):
         while self.world.is_occupied(self.x, self.y):
