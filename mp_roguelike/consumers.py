@@ -4,9 +4,9 @@ import random
 import json
 
 from .util import Die
-from .world import World, Entity, DummyAI
+from .world import World, Entity, ControlledAI
 
-world = World(20, 20)
+world = World(100, 100)
 world.generate()
 world.update()
 
@@ -48,7 +48,7 @@ class Player:
             "name": self.__name,
             "character": "@",
             "color": self.__color,
-            "ai_type": DummyAI,
+            "ai_type": ControlledAI,
             "hp_roll": Die(3, 8, +40),
             "attack_roll": Die(2, 6, +2),
             "view_radius": 10

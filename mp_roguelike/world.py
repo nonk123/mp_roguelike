@@ -47,10 +47,6 @@ class AI:
         self.entity = entity
         self.queued_path = []
 
-    @property
-    def can_think(self):
-        return True
-
     def think(self):
         if self.queued_path:
             x, y = self.queued_path.pop(0)
@@ -77,10 +73,9 @@ class AI:
         if entity is not None:
             self.move_to(entity.x, entity.y)
 
-class DummyAI(AI):
-    @property
-    def can_think(self):
-        return False
+class ControlledAI(AI):
+    def think(self):
+        pass
 
 class AggressiveAI(AI):
     def think(self):
@@ -89,7 +84,7 @@ class AggressiveAI(AI):
         self.entity.turn_done = True
 
     def is_enemy(self, entity):
-        return super().is_enemy(entity) and not entity.ai.can_think
+        return super().is_enemy(entity) and isinstance(entity.ai, ControlledAI)
 
     def find_closest_enemy(self):
         closest = None
@@ -124,10 +119,12 @@ class Entity(Tile):
 
         self.attack_roll = get_param(params, "attack_roll", Die(1, 6))
 
-        self.ai = get_param(params, "ai_type", AggressiveAI)(self)
+        ai_args = get_param(params, "ai_args", ())
+        self.ai = get_param(params, "ai_type", AggressiveAI)(self, *ai_args)
 
         self.turn_done = False
 
+        self.added = Sender()
         self.damaged = Sender()
         self.dead = Sender()
         self.attacked = Sender()
@@ -205,6 +202,7 @@ class Entity(Tile):
     def on_add(self, world):
         self.world = world
         self.set_random_position()
+        self.added()
 
     def on_remove(self):
         self.world = None
@@ -252,6 +250,57 @@ class Entity(Tile):
             turn = Turn(self, self.__move, dx, dy, expected_targets)
             self.world.queue_turn(turn)
 
+class SpawnerAI(AI):
+    def __init__(self, entity, spawn_fun, max_spawn=5, spawn_cooldown=15):
+        super().__init__(entity)
+
+        self.spawn_fun = spawn_fun
+        self.max_spawn = max_spawn
+        self.spawn_cooldown = spawn_cooldown
+
+        self.spawned = []
+        self.turns_since_last_spawn = 0
+
+    def position(self, entity):
+        while True:
+            entity.x = self.entity.x + random.randint(-1, 2)
+            entity.y = self.entity.y + random.randint(-1, 2)
+
+            if not self.entity.world.is_occupied(entity.x, entity.y):
+                return
+
+    def think(self):
+        if len(self.spawned) < self.max_spawn \
+           and self.turns_since_last_spawn >= self.spawn_cooldown:
+            entity = self.spawn_fun()
+
+            self.spawned.append(entity)
+            entity.added += lambda: self.position(entity)
+            entity.dead += lambda: self.spawned.remove(entity)
+
+            self.entity.world.add_entity(entity)
+
+            self.turns_since_last_spawn = 0
+
+        self.turns_since_last_spawn += 1
+
+        self.entity.turn_done = True
+
+class Spawner(Entity):
+    def __init__(self, params):
+        params["hp_roll"] = Die(5, 20, +300)
+        params["attack_roll"] = Die(0, 0)
+
+        params["ai_type"] = SpawnerAI
+
+        spawn_fun = get_param(params, "spawn_fun")
+        max_spawn = get_param(params, "max_spawn", 5)
+        spawn_cooldown = get_param(params, "spawn_cooldown", 15)
+
+        params["ai_args"] = (spawn_fun, max_spawn, spawn_cooldown)
+
+        super().__init__(params)
+
 class World:
     def __init__(self, width, height):
         self.width = width
@@ -265,6 +314,10 @@ class World:
 
     def get_tile_at(self, x, y):
         return self.tiles[y][x] if self.is_in_bounds(x, y) else Tile()
+
+    def set_tile(self, x, y, tile):
+        if self.is_in_bounds(x, y):
+            self.tiles[y][x] = tile
 
     def get_entities_at(self, x, y):
         if self.is_in_bounds(x, y):
@@ -333,31 +386,48 @@ class World:
         turn.entity.turn_done = True
 
     def update(self):
-        while len([e for e in self.entities if e.ai.can_think]) <= 8:
-            self.add_entity(Entity({
-                "name": "Goblin",
-                "character": "g",
-                "color": "darkgreen",
-                "hp_roll": Die(1, 3, +4),
-                "attack_roll": Die(1, 4, -1),
-                "view_radius": 5
-            }))
+        for entity in self.entities:
+            entity.ai.think()
 
         for entity in self.entities:
-            if not entity.ai.can_think and not entity.turn_done:
+            if not entity.turn_done:
                 return
 
-            entity.ai.think()
+            entity.turn_done = False
 
         for turn in self.queued_turns:
             turn.do()
 
-        for entity in self.entities:
-            entity.turn_done = False
-
         self.queued_turns = []
 
         self.updated()
+
+    def __count_walls(self, x, y):
+        to_check = [
+            (x - 1, y - 1),
+            (x, y - 1),
+            (x + 1, y - 1),
+            (x - 1, y),
+            (x, y),
+            (x + 1, y),
+            (x - 1, y + 1),
+            (x, y + 1),
+            (x + 1, y + 1)
+        ]
+
+        walls_count = 0
+
+        for coords in to_check:
+            if isinstance(self.get_tile_at(*coords), Wall):
+                walls_count += 1
+
+        return walls_count
+
+    def __run_cellular_automata(self):
+        for y, row in enumerate(self.tiles):
+            for x, tile in enumerate(row):
+                if self.__count_walls(x, y) > 5:
+                    self.set_tile(x, y, Wall())
 
     def generate(self):
         self.tiles = []
@@ -366,5 +436,30 @@ class World:
             self.tiles.append([])
 
             for x in range(self.width):
-                tile = Wall() if self.is_on_border(x, y) else Floor()
+                if self.is_on_border(x, y) or random.random() <= 0.4:
+                    tile = Wall()
+                else:
+                    tile = Floor()
+
                 self.tiles[y].append(tile)
+
+        for i in range(4):
+            self.__run_cellular_automata()
+
+        def spawn_goblin():
+            return Entity({
+                "name": "Goblin",
+                "character": "g",
+                "color": "darkgreen",
+                "hp_roll": Die(1, 3, +4),
+                "attack_roll": Die(1, 4, -1),
+                "view_radius": 6
+            })
+
+        for i in range(10):
+            self.add_entity(Spawner({
+                "name": "Goblin Spawner",
+                "character": "*",
+                "color": "brown",
+                "spawn_fun": spawn_goblin
+            }))
