@@ -67,7 +67,7 @@ class AI:
             self.queued_path.append((*at,))
 
     def is_enemy(self, entity):
-        return not entity.is_at(self.entity.x, self.entity.y)
+        return isinstance(entity.ai, ControlledAI)
 
     def attack(self, entity):
         if entity is not None:
@@ -76,6 +76,9 @@ class AI:
 class ControlledAI(AI):
     def think(self):
         pass
+
+    def is_enemy(self, entity):
+        return not super().is_enemy(entity)
 
 class AggressiveAI(AI):
     def think(self):
@@ -214,7 +217,9 @@ class Entity(Tile):
         entity.damage(dmg)
 
     def choose_target(self, targets):
-        return targets[0] if targets else None
+        for target in sorted(targets, key=lambda e: e.hp):
+            if self.ai.is_enemy(target):
+                return target
 
     def __move(self, dx, dy, expected_targets):
         new_pos = [self.x + dx, self.y + dy]
@@ -222,25 +227,18 @@ class Entity(Tile):
 
         target = self.choose_target(expected_targets)
 
-        # No suicide allowed.
-        if target is self:
-            return
-
-        # The target is still in range, strike it.
         if target in current_targets:
             return self.attack(target)
 
+        if not target and not self.world.is_occupied(*new_pos):
+            self.x, self.y = new_pos
+            return self.moved(dx, dy)
+
         if target:
-            # The target has moved out of range; attacked failed.
             self.target_dodged(target)
             target.dodged()
         elif current_targets:
-            # Another enemy has moved into range, so it receives a beating.
             self.attack(self.choose_target(current_targets))
-        elif not current_targets and not self.world.is_occupied(*new_pos):
-            # Space clear, move into it.
-            self.x, self.y = new_pos
-            self.moved(dx, dy)
 
     def queue_move(self, dx, dy):
         x, y = self.x + dx, self.y + dy
@@ -263,8 +261,8 @@ class SpawnerAI(AI):
 
     def position(self, entity):
         while True:
-            entity.x = self.entity.x + random.randint(-1, 2)
-            entity.y = self.entity.y + random.randint(-1, 2)
+            entity.x = self.entity.x + random.randint(-1, 1)
+            entity.y = self.entity.y + random.randint(-1, 1)
 
             if not self.entity.world.is_occupied(entity.x, entity.y):
                 return
@@ -456,7 +454,7 @@ class World:
                 "view_radius": 6
             })
 
-        for i in range(10):
+        for i in range(20):
             self.add_entity(Spawner({
                 "name": "Goblin Spawner",
                 "character": "*",
