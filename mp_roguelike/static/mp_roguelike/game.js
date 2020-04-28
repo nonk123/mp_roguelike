@@ -24,7 +24,7 @@ function draw(data) {
     const h = Math.floor(gameElement.height / display.length);
     ctx.font = `${h}px monospace`;
 
-    const w = ctx.measureText("@").width;
+    const w = Math.ceil(ctx.measureText("@").width);
 
     ctx.textBaseline = "top";
 
