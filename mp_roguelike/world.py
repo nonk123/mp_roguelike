@@ -20,14 +20,12 @@ class Tile:
         return color(self.color, "You")
 
 class Floor(Tile):
-    characters = (".", ".", ".", ",")
-
-    def __init__(self, background="gray"):
-        super().__init__(f"{color} floor", random.choice(self.characters), "gray", background)
+    def __init__(self, color):
+        super().__init__(f"{color} floor", " ", "gray", color)
 
 class Wall(Tile):
-    def __init__(self, color="gray"):
-        super().__init__(f"{color} wall", "#", "black", color)
+    def __init__(self, color, background):
+        super().__init__(f"{color} wall", "#", color, background)
 
         self.impassable = True
 
@@ -425,19 +423,24 @@ class World:
         for y, row in enumerate(self.tiles):
             for x, tile in enumerate(row):
                 if self.__count_walls(x, y) > 5:
-                    self.set_tile(x, y, Wall())
+                    self.set_tile(x, y, Wall(self.fg, self.bg))
 
     def generate(self):
         self.tiles = []
+
+        self.fg, self.bg = random.choice([
+            ("gray", "#303030"),
+            ("saddlebrown", "darkgreen")
+        ])
 
         for y in range(self.height):
             self.tiles.append([])
 
             for x in range(self.width):
                 if self.is_on_border(x, y) or random.random() <= 0.4:
-                    tile = Wall()
+                    tile = Wall(self.fg, self.bg)
                 else:
-                    tile = Floor()
+                    tile = Floor(self.bg)
 
                 self.tiles[y].append(tile)
 
