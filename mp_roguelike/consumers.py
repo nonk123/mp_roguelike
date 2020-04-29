@@ -4,11 +4,9 @@ import random
 import json
 
 from .util import Die
-from .world import World, Entity, ControlledAI
-
-world = World(100, 100)
-world.generate()
-world.update()
+from .world import world
+from .entities import Entity
+from .ai import ControlledAI
 
 players = []
 
