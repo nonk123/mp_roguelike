@@ -42,6 +42,43 @@ class Wall(Tile):
     def opaque(self):
         return True
 
+    def get_fancy_character(self, world, x, y):
+        wall_characters = {
+            "0,0,0,0": "○",
+            "1,0,0,0": "○",
+            "0,1,0,0": "○",
+            "1,1,0,0": "═",
+            "0,0,1,0": "○",
+            "0,0,0,1": "○",
+            "0,0,1,1": "║",
+            "1,0,1,0": "╝",
+            "1,0,0,1": "╗",
+            "0,1,1,0": "╚",
+            "0,1,0,1": "╔",
+            "1,0,1,1": "╣",
+            "0,1,1,1": "╠",
+            "1,1,1,0": "╩",
+            "1,1,0,1": "╦",
+            "1,1,1,1": "╬"
+        }
+
+        positions = [
+            (x - 1, y),
+            (x + 1, y),
+            (x, y - 1),
+            (x, y + 1)
+        ]
+
+        adjacent = []
+
+        for pos in positions:
+            if world.get_tile_at(*pos).impassable:
+                adjacent.append("1")
+            else:
+                adjacent.append("0")
+
+        return wall_characters[",".join(adjacent)]
+
 class Turn:
     def __init__(self, entity, action, *args, **kwargs):
         self.entity = entity
@@ -401,7 +438,15 @@ class World:
                 x += entity.x
 
                 if entity.can_see(x, y):
-                    row.append(self.get_tile_at(x, y))
+                    tile = self.get_tile_at(x, y)
+
+                    if isinstance(tile, Wall):
+                        tile = {
+                            **tile.__dict__,
+                            "character": tile.get_fancy_character(self, x, y)
+                        }
+
+                    row.append(tile)
                 else:
                     row.append(Tile())
 

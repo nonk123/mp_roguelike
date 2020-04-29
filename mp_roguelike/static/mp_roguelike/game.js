@@ -37,55 +37,9 @@ function draw(data) {
                 ctx.fillRect(dx, dy, w, h);
             }
 
-            function isWall(x, y) {
-                if (x >= 0 && x < display[0].length && y >= 0 && y < display.length) {
-                    return display[y][x].character == "#";
-                } else {
-                    return false;
-                }
-            }
-
-            let character = tile.character;
-
-            if (isWall(x, y)) {
-                const aroundPositions = [
-                    [x - 1, y],
-                    [x + 1, y],
-                    [x, y - 1],
-                    [x, y + 1]
-                ];
-
-                const wallsAround = [];
-
-                for (const pos of aroundPositions) {
-                    wallsAround.push(0 + isWall(...pos));
-                }
-
-                const wallCharacters = {
-                    "0,0,0,0": "○",
-                    "1,0,0,0": "○",
-                    "0,1,0,0": "○",
-                    "1,1,0,0": "═",
-                    "0,0,1,0": "○",
-                    "0,0,0,1": "○",
-                    "0,0,1,1": "║",
-                    "1,0,1,0": "╝",
-                    "1,0,0,1": "╗",
-                    "0,1,1,0": "╚",
-                    "0,1,0,1": "╔",
-                    "1,0,1,1": "╣",
-                    "0,1,1,1": "╠",
-                    "1,1,1,0": "╩",
-                    "1,1,0,1": "╦",
-                    "1,1,1,1": "╬"
-                };
-
-                character = wallCharacters[wallsAround.join(",")];
-            }
-
             if (tile.character && tile.character != " ") {
                 ctx.fillStyle = tile.color;
-                ctx.fillText(character, dx, dy);
+                ctx.fillText(tile.character, dx, dy);
             }
         }
     }
