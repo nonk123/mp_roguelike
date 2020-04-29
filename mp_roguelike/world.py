@@ -477,10 +477,9 @@ class World:
             if not entity.turn_done:
                 return
 
-            entity.turn_done = False
-
         for turn in self.queued_turns:
             turn.do()
+            turn.entity.turn_done = False
 
         self.queued_turns = []
 
