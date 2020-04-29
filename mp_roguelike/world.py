@@ -429,8 +429,7 @@ class World:
         self.tiles = []
 
         self.fg, self.bg = random.choice([
-            ("gray", "#303030"),
-            ("saddlebrown", "darkgreen")
+            ("gray", "#303030")
         ])
 
         for y in range(self.height):
