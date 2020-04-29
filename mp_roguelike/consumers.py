@@ -56,9 +56,6 @@ class Player:
 
         world.add_entity(self.entity)
 
-        msg = f"{self.entity.fancy_you} have {self.entity.hp} HP."
-        self.consumer.send_message("Game", msg)
-
         self.entity.dead += self.respawn
         self.entity.damaged += self.show_taken_damage
         self.entity.attacked += self.show_dealt_damage
@@ -68,8 +65,6 @@ class Player:
 def update_all():
     for player in players:
         player.consumer.update()
-
-world.updated += update_all
 
 class RoguelikeConsumer(WebsocketConsumer):
     def connect(self):
@@ -126,7 +121,8 @@ class RoguelikeConsumer(WebsocketConsumer):
 
         player.consumer.respond("update", {
             "tiles": tiles,
-            "entities": entities
+            "entities": entities,
+            "player": player.entity.stripped()
         })
 
     def on_auth(self, data):
@@ -160,6 +156,8 @@ class RoguelikeConsumer(WebsocketConsumer):
             turn_handlers[turn_type](data["data"])
 
         world.update()
+
+        update_all()
 
     def on_chat(self, data):
         if data["message"]:

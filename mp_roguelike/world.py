@@ -193,20 +193,15 @@ class Entity(Tile):
         return dx*dx + dy*dy
 
     def stripped(self):
-        tile = Tile(self.name, self.character, self.color)
-
-        extras = {
+        return {
+            **Tile(self.name, self.character, self.color).__dict__,
             "x": self.x,
             "y": self.y,
             "hp": self.hp,
             "view_radius": self.view_radius,
-            "attack_roll": self.attack_roll
+            "attack_roll": self.attack_roll,
+            "turn_done": self.turn_done
         }
-
-        for k, v in extras.items():
-            setattr(tile, k, v)
-
-        return tile
 
     def get_visible_entities(self):
         if self.world:
@@ -457,8 +452,8 @@ class World:
         for i, other in enumerate(entities):
             other = other.stripped()
 
-            other.x += entity.view_radius - entity.x
-            other.y += entity.view_radius - entity.y
+            other["x"] += entity.view_radius - entity.x
+            other["y"] += entity.view_radius - entity.y
 
             entities[i] = other
 

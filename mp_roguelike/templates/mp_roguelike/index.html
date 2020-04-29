@@ -21,6 +21,7 @@
 
      .ui {
          padding: 7px;
+         vertical-align: top;
      }
 
      .vsplit {
@@ -30,9 +31,17 @@
          bottom: 0px;
      }
 
-     #status {
-         vertical-align: top;
+     .top, .bottom {
+         height: 50vh;
+     }
+
+     #messages {
          overflow-y: scroll;
+     }
+
+     #status {
+         width: 100%;
+         height: 100%;
      }
 
      * {
@@ -47,15 +56,20 @@
   <body>
     <table class="layout">
       <tr>
-        <td class="ui vsplit" style="border-right: 2px solid gray;">
+        <td class="ui vsplit" rowspan="2" style="border-right: 2px solid gray;">
           <canvas id="game" class="ui"></canvas>
         </td>
-        <td class="ui vsplit" style="vertical-align: top;">
-          <div id="status" style="height: calc(100vh - 48px);"></div>
+        <td class="ui vsplit top" style="border-bottom: 2px solid gray;">
+          <div id="messages" style="height: calc(50vh - 48px);"></div>
           <div style="padding-top: 7px;">
-            <input id="chatInput" type="text" style="height: 20px;"></input>
+              <input id="chatInput" type="text" style="height: 20px;"></input>
           </div>
         </td>
+      </tr>
+      <tr>
+          <td class="ui vsplit bottom">
+              <div id="status"></div>
+          </td>
       </tr>
     </table>
     <!-- Allows passing `name' variable from the query into the script. -->

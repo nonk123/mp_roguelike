@@ -1,19 +1,20 @@
-const gameElement = document.getElementById("game");
-const statusElement = document.getElementById("status");
-
-display = [];
+const display = [];
 
 function draw(data) {
-    for (const [y, row] of data.tiles.entries()) {
-        display[y] = row.slice();
-    }
+    const gameElement = document.getElementById("game");
 
-    for (const entity of data.entities) {
-        display[entity.y][entity.x] = {
-            character: entity.character,
-            color: entity.color,
-            background: display[entity.y][entity.x].background
-        };
+    if (data && data.tiles && data.entities) {
+        for (const [y, row] of data.tiles.entries()) {
+            display[y] = row.slice();
+        }
+
+        for (const entity of data.entities) {
+            display[entity.y][entity.x] = {
+                character: entity.character,
+                color: entity.color,
+                background: display[entity.y][entity.x].background
+            };
+        }
     }
 
     gameElement.width = gameElement.clientWidth;
@@ -45,17 +46,58 @@ function draw(data) {
     }
 }
 
-function displayMessage(data) {
-    const messageElement = document.createElement("span");
-    messageElement.innerHTML = `${data.sender}: ${data.text}<br>`;
+function dieToString(die) {
+    return `${die.count}d${die.sides}${die.inc < 0 ? "-" : "+"}${die.inc}`
+}
 
-    statusElement.appendChild(messageElement);
-    statusElement.scrollTop = statusElement.scrollHeight;
+function update(data) {
+    const statusElement = document.getElementById("status");
+    statusElement.textContent = "";
+
+    const characterElement = document.createElement("div");
+    characterElement.style.fontSize = "20px";
+    characterElement.style.color = data.player.color;
+    characterElement.textContent = data.player.character;
+
+    statusElement.appendChild(characterElement);
+
+    const hpElement = document.createElement("div");
+    hpElement.style.fontSize = "13px";
+    hpElement.style.marginTop = "7px";
+    hpElement.textContent = `Health: ${data.player.hp}`;
+
+    statusElement.appendChild(hpElement);
+
+    const attackElement = document.createElement("div");
+    attackElement.style.fontSize = "13px";
+    attackElement.textContent = `Attack: ${dieToString(data.player.attack_roll)}`;
+
+    statusElement.appendChild(attackElement);
+
+    const turnIndicator = document.createElement("div");
+    turnIndicator.style.fontSize = "10px";
+    turnIndicator.textContent = `Waiting for ${data.player.turn_done ? "others" : "you"}`
+
+    statusElement.appendChild(turnIndicator);
+
+    draw(data);
+}
+
+window.onresize = function(e) { draw() };
+
+function displayMessage(data) {
+    const messagesElement = document.getElementById("messages");
+
+    const message = document.createElement("span");
+    message.innerHTML = `${data.sender}: ${data.text}<br>`;
+
+    messagesElement.appendChild(message);
+    messagesElement.scrollTop = messagesElement.scrollHeight;
 }
 
 const handlers = {
-    "update": draw,
-    "message": displayMessage
+    update: update,
+    message: displayMessage
 };
 
 const socket = new WebSocket(`ws://${window.location.host}/server/`);
@@ -69,19 +111,19 @@ function respond(event, data="") {
 
 function turn(type, data) {
     respond("turn", {
-        "turn_type": type,
-        "data": data
+        turn_type: type,
+        data: data
     });
 }
 
 socket.onopen = function(e) {
     respond("auth", {
-        "name": document.getElementById("name").value
+        name: document.getElementById("name").value
     });
 }
 
 socket.onclose = function(e) {
-    displayMessage({"sender": e.code, text: "disconnected"});
+    displayMessage({sender: e.code, text: "disconnected"});
 }
 
 socket.onmessage = function(e) {
@@ -96,8 +138,8 @@ socket.onmessage = function(e) {
 
 function move(dx, dy) {
     turn("move", {
-        "dx": dx,
-        "dy": dy
+        dx: dx,
+        dy: dy
     });
 }
 
@@ -106,7 +148,7 @@ const inputField = document.getElementById("chatInput");
 inputField.addEventListener("keydown", event => {
     if (event.key == "Enter") {
         respond("chat", {
-            "message": inputField.value
+            message: inputField.value
         });
 
         inputField.value = "";
@@ -118,7 +160,7 @@ inputField.addEventListener("keydown", event => {
 });
 
 const keys = {
-    "t": () => inputField.focus()
+    t: () => inputField.focus()
 };
 
 const gameKeys = {
