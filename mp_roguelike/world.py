@@ -9,7 +9,6 @@ class Tile:
         self.character = character
         self.background = background
         self.color = color
-        self.impassable = False
 
     @property
     def fancy_name(self):
@@ -19,6 +18,14 @@ class Tile:
     def fancy_you(self):
         return color(self.color, "You")
 
+    @property
+    def impassable(self):
+        return False
+
+    @property
+    def opaque(self):
+        return False
+
 class Floor(Tile):
     def __init__(self, color):
         super().__init__(f"{color} floor", " ", "gray", color)
@@ -27,7 +34,13 @@ class Wall(Tile):
     def __init__(self, color, background):
         super().__init__(f"{color} wall", "#", color, background)
 
-        self.impassable = True
+    @property
+    def impassable(self):
+        return True
+
+    @property
+    def opaque(self):
+        return True
 
 class Turn:
     def __init__(self, entity, action, *args, **kwargs):
@@ -192,10 +205,40 @@ class Entity(Tile):
         return self.x == x and self.y == y
 
     def can_see(self, x, y):
-        dx = self.x - x
-        dy = self.y - y
+        dx, dy = x - self.x, y - self.y
 
-        return dx*dx + dy*dy <= self.view_radius * self.view_radius
+        if dx*dx + dy*dy > self.view_radius**2:
+            return False
+
+        cx, cy = self.x, self.y
+
+        if abs(dx) >= abs(dy):
+            step = abs(dx);
+        else:
+            step = abs(dy);
+
+        if step == 0:
+            return True
+
+        dx = dx / step;
+        dy = dy / step;
+
+        i = 0
+
+        blocked = False
+
+        while i < step:
+            cx += dx
+            cy += dy
+            i += 1
+
+            if self.world.get_tile_at(int(cx), int(cy)).opaque:
+                if blocked:
+                    return False
+
+                blocked = True
+
+        return True
 
     def is_in_movement_range(self, dx, dy):
         return abs(dx) <= 1 and abs(dy) <= 1
